@@ -44,7 +44,33 @@ docker volume create nevu_data
 docker run --name nevu -p 3000:3000 -v nevu_data:/app/data -e PLEX_SERVER=http://your-plex-server:32400 ipmake/nevu
 ```
 
-#### Environment Variables
+### Docker Compose
+
+Alternatively, you can use Docker Compose to run Nevu. Create a `docker-compose.yml` file with the following content:
+
+```yaml
+services:
+    nevu:
+        image: ipmake/nevu
+        container_name: nevu
+        ports:
+            - "3000:3000"
+        volumes:
+            - nevu_data:/app/data
+        environment:
+            - PLEX_SERVER=http://your-plex-server:32400
+
+volumes:
+    nevu_data:
+```
+
+Then run:
+
+```bash
+docker-compose up -d
+```
+
+### Environment Variables
 | Name                     | Type       | Required | Description                                                                 |
 |--------------------------|------------|----------|-----------------------------------------------------------------------------|
 | `PLEX_SERVER`            | string     | Yes      | The URL of the Plex server that the frontend will connect to                |
