@@ -23,9 +23,15 @@ function SettingsPlayback() {
       <Box sx={{ mt: 2 }}>
         <CheckBoxOption
           title="Disable watchscreen darkening"
+          subtitle="Disables the darkening effect when interacting with the watchscreen."
           checked={settings.DISABLE_WATCHSCREEN_DARKENING === "true"}
           onChange={() => {
-            setSetting("DISABLE_WATCHSCREEN_DARKENING", settings["DISABLE_WATCHSCREEN_DARKENING"] === "true" ? "false" : "true");
+            setSetting(
+              "DISABLE_WATCHSCREEN_DARKENING",
+              settings["DISABLE_WATCHSCREEN_DARKENING"] === "true"
+                ? "false"
+                : "true"
+            );
           }}
         />
       </Box>
