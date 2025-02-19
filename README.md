@@ -44,14 +44,14 @@ docker run --name nevu -p 3000:3000 -e PLEX_SERVER=http://your-plex-server:32400
 ```
 
 #### Environment Variables
-| Name                   | Type       | Required | Description                                                                 |
-|------------------------|------------|----------|-----------------------------------------------------------------------------|
-| PLEX_SERVER            | string     | Yes      | The URL of the Plex server that the frontend will connect to                |
-| PROXY_PLEX_SERVER      | string     | No       | The URL of the Plex server to proxy requests to                             |
-| DISABLE_PROXY          | true/false | No       | If set to true, the proxy will be disabled and all requests go directly to the Plex server from the frontend (NOT RECOMMENDED) |
-| DISABLE_TLS_VERIFY     | true/false | No       | If set to true, the proxy will not check any https ssl certificates         |
-| DISABLE_NEVU_SYNC | true/false | No       | If set to true, Nevu sync (watch together) will be disabled            |
-| DISABLE_REQUEST_LOGGING| true/false | No       | If set to true, the server will not log any requests                        |
+| Name                     | Type       | Required | Description                                                                 |
+|--------------------------|------------|----------|-----------------------------------------------------------------------------|
+| `PLEX_SERVER`            | string     | Yes      | The URL of the Plex server that the frontend will connect to                |
+| `PROXY_PLEX_SERVER`      | string     | No       | The URL of the Plex server to proxy requests to                             |
+| `DISABLE_PROXY`          | true/false | No       | If set to true, the proxy will be disabled and all requests go directly to the Plex server from the frontend (NOT RECOMMENDED) |
+| `DISABLE_TLS_VERIFY`     | true/false | No       | If set to true, the proxy will not check any https ssl certificates         |
+| `DISABLE_NEVU_SYNC`      | true/false | No       | If set to true, Nevu sync (watch together) will be disabled                 |
+| `DISABLE_REQUEST_LOGGING`| true/false | No       | If set to true, the server will not log any requests                        |
 
 
 
