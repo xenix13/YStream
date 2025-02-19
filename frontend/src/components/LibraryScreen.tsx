@@ -35,7 +35,10 @@ function LibraryScreen() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSearchParams(new URLSearchParams());
+      if (e.key === "Escape") {
+        searchParams.delete("bkey");
+        setSearchParams(searchParams);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -47,7 +50,9 @@ function LibraryScreen() {
     if (!(searchParams.has("mid") && searchParams.has("bkey"))) return;
 
     const localbkey = searchParams.get("bkey");
-    if (localbkey) setSearchParams({ bkey: localbkey });
+    searchParams.delete("mid");
+    if (localbkey) searchParams.set("bkey", localbkey);
+    setSearchParams(searchParams);
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -102,7 +107,8 @@ function LibraryScreen() {
           zIndex: 1200,
         }}
         onClick={() => {
-          setSearchParams(new URLSearchParams());
+          searchParams.delete("bkey");
+          setSearchParams(searchParams);
         }}
       >
         <CircularProgress />
@@ -121,7 +127,8 @@ function LibraryScreen() {
           zIndex: 1200,
         }}
         onClick={() => {
-          setSearchParams(new URLSearchParams());
+          searchParams.delete("bkey");
+          setSearchParams(searchParams);
         }}
       >
         <Box

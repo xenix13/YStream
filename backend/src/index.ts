@@ -155,17 +155,18 @@ app.get('/config', (req, res) => {
 });
 
 app.get('/user/options', async (req, res) => {
-    if(!req.headers['X-Plex-Token']) return res.status(401).send('Unauthorized');
+    if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
 
-    const user = await CheckPlexUser(req.headers['X-Plex-Token'] as string);
-    if(!user) return res.status(401).send('Unauthorized');
+    const user = await CheckPlexUser(req.headers['x-plex-token'] as string);
+    if(!user) return res.status(401).send('Unauthorized user');
 
     const options = await prisma.userOption.findMany({
         where: {
             userUid: user.uuid,
         }
-    }).catch(() => {
+    }).catch((err) => {
         res.status(500).send('Internal server error');
+        console.log(err);
         return null;
     });
     if(!options) return;
@@ -174,10 +175,10 @@ app.get('/user/options', async (req, res) => {
 });
 
 app.post('/user/options', async (req, res) => {
-    if(!req.headers['X-Plex-Token']) return res.status(401).send('Unauthorized');
+    if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
 
-    const user = await CheckPlexUser(req.headers['X-Plex-Token'] as string);
-    if(!user) return res.status(401).send('Unauthorized');
+    const user = await CheckPlexUser(req.headers['x-plex-token'] as string);
+    if(!user) return res.status(401).send('Unauthorized user');
 
     const { key, value } = req.body;
 
@@ -198,8 +199,9 @@ app.post('/user/options', async (req, res) => {
             key,
             value,
         }
-    }).catch(() => {
+    }).catch((err) => {
         res.status(500).send('Internal server error');
+        console.log(err);
         return null;
     });
     if(!option) return;

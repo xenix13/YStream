@@ -17,6 +17,8 @@ import WaitingRoom from "./pages/WaitingRoom";
 import ToastManager from "./components/ToastManager";
 import LibraryScreen from "./components/LibraryScreen";
 import { useSessionStore } from "./states/SessionState";
+import Settings from "./pages/Settings";
+import { useUserSettings } from "./states/UserSettingsState";
 
 function AppManager() {
   const { loading } = useStartupState();
@@ -76,6 +78,7 @@ function App() {
   useEffect(() => {
     useWatchListCache.getState().loadWatchListCache();
     useSessionStore.getState().fetchPlexServer();
+    useUserSettings.getState().fetchSettings();
 
     const interval = setInterval(() => {
       useWatchListCache.getState().loadWatchListCache();
@@ -113,6 +116,7 @@ function App() {
             path="/library/:libraryKey/dir/:dir/:subdir?"
             element={<Library />}
           />
+          <Route path="/settings/*" element={<Settings />} />
         </Routes>
       </Box>
     </>

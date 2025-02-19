@@ -53,6 +53,7 @@ import {
 import { useSyncInterfaceState } from "../components/PerPlexedSync";
 import { absoluteDifference } from "../common/NumberExtra";
 import WatchShowChildView from "../components/WatchShowChildView";
+import { useUserSettings } from "../states/UserSettingsState";
 
 let SessionID = "";
 export { SessionID };
@@ -64,6 +65,7 @@ function Watch() {
   const navigate = useNavigate();
 
   const { sessionID } = useSessionStore();
+  const { settings } = useUserSettings();
 
   const [metadata, setMetadata] = useState<Plex.Metadata | null>(null);
   const [showmetadata, setShowMetadata] = useState<Plex.Metadata | null>(null);
@@ -1439,7 +1441,7 @@ function Watch() {
 
                     display: "flex",
                     flexDirection: "column",
-                    backgroundColor: "#000000AA",
+                    backgroundColor: settings["DISABLE_WATCHSCREEN_DARKENING"] === "true" ? "transparent" : "#000000AA",
                     pointerEvents: "none",
                   }}
                 >

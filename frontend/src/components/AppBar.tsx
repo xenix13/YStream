@@ -74,6 +74,8 @@ function Appbar() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     getAllLibraries().then((res) => {
       setLibraries(res);
@@ -196,9 +198,8 @@ S - Skip onscreen markers (intro, credits, etc)
         <MenuItem
           onClick={() => {
             setAnchorEl(null);
-            // navigate("/settings");
+            navigate("/settings/info");
           }}
-          disabled
         >
           <ListItemIcon>
             <SettingsRounded fontSize="small" />
