@@ -1681,7 +1681,7 @@ function Watch() {
                         <VolumeUpRounded fontSize="large" />
                       </IconButton>
 
-                      {metadata.type === "episode" && (
+                      {(metadata.type === "episode" && !(room && !isHost)) && (
                         <WatchShowChildView item={metadata} />
                       )}
 
