@@ -90,7 +90,7 @@ function Library() {
           }
         ).then(async (media) => {
           let data = media.Metadata;
-          if (!data) return;
+          if (!data) return resolve([]);
           resolve(data.filter((item) => ["movie", "show"].includes(item.type)));
         });
       });
