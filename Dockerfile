@@ -16,4 +16,4 @@ VOLUME /app/data
 
 COPY frontend/build/ /app/www/
 
-CMD ["node", "dist/index.js"]
+CMD ["npm", "start"]
