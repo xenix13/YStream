@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  ClickAwayListener,
   Collapse,
   Divider,
   Grid,
@@ -16,8 +15,8 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { JSX, useEffect, useState } from "react";
 import {
   getLibraryMeta,
   getLibraryMetaChildren,
@@ -26,15 +25,12 @@ import {
   setMediaRating,
 } from "../plex";
 import {
-  BookmarkRounded,
-  BookmarkBorderRounded,
   CheckCircleRounded,
   CloseRounded,
   PlayArrowRounded,
   VolumeOffRounded,
   VolumeUpRounded,
   CheckCircleOutlineRounded,
-  StarOutlineOutlined,
   StarRounded,
   StarOutlineRounded,
 } from "@mui/icons-material";
@@ -45,6 +41,9 @@ import MovieItem from "./MovieItem";
 import { useBigReader } from "./BigReader";
 import { useWatchListCache } from "../states/WatchListCache";
 import { useInView } from "react-intersection-observer";
+import { WatchListButton } from "./MovieItem";
+import { alpha } from "@mui/material/styles";
+import { AnimatePresence, motion } from "framer-motion";
 
 function MetaScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -217,7 +216,7 @@ function MetaScreen() {
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
-        zIndex: 9999,
+        zIndex: 100,
       }}
       onClick={() => {
         setSearchParams(new URLSearchParams());
@@ -225,12 +224,12 @@ function MetaScreen() {
     >
       <Box
         sx={{
-          width: "120vh",
+          width: "130vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
           justifyContent: "flex-start",
-          backgroundColor: "#181818",
+          backgroundColor: "#121216",
           mt: 4,
           pb: "20vh",
 
@@ -352,7 +351,7 @@ function MetaScreen() {
             height: "30vh",
             width: "100%",
             background:
-              "linear-gradient(180deg, #18181800, #181818FF, #181818FF)",
+              "linear-gradient(180deg, #12121600, #121216FF, #121216FF)",
             zIndex: 1,
           }}
         />
@@ -370,24 +369,40 @@ function MetaScreen() {
             zIndex: 2,
           }}
         >
-          <img
-            src={`${getTranscodeImageURL(
-              `${data?.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
-              600,
-              900
-            )}`}
-            alt=""
-            style={{
+          <Box
+            sx={{
               width: "30%",
-              aspectRatio: "2/3",
-              boxShadow: "-10px 10px 01px 0px #000000FF",
-              backgroundColor: "#00000088",
-              objectFit: "cover",
               borderRadius: "10px",
+              overflow: "hidden",
+              boxShadow: (theme) =>
+                `0 20px 25px -5px ${theme.palette.common.black}`,
+              position: "relative",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "scale(1.02)",
+                boxShadow: (theme) =>
+                  `0 25px 30px -5px ${theme.palette.common.black}`,
+              },
             }}
-          />
+          >
+            <img
+              src={`${getTranscodeImageURL(
+                `${data?.thumb}?X-Plex-Token=${localStorage.getItem(
+                  "accessToken"
+                )}`,
+                600,
+                900
+              )}`}
+              alt={data?.title || ""}
+              style={{
+                width: "100%",
+                aspectRatio: "2/3",
+                backgroundColor: "#00000088",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </Box>
 
           <Box
             sx={{
@@ -419,21 +434,12 @@ function MetaScreen() {
                   mb: "-10px",
                 }}
               >
-                {/* <img
-                  src="/plexIcon.png"
-                  alt=""
-                  height="40"
-                  style={{
-                    aspectRatio: 1,
-                    borderRadius: 8,
-                  }}
-                /> */}
                 <Typography
                   sx={{
-                    fontSize: "30px",
+                    fontSize: "24px",
                     fontWeight: "900",
                     letterSpacing: "0.1em",
-                    color: theme => theme.palette.primary.main,
+                    color: (theme) => theme.palette.primary.main,
                     textTransform: "uppercase",
                   }}
                 >
@@ -446,6 +452,7 @@ function MetaScreen() {
                   fontSize: "3rem",
                   fontWeight: "bold",
                   mt: 0,
+                  color: (theme) => theme.palette.text.primary,
                 }}
               >
                 {data?.title}
@@ -459,24 +466,23 @@ function MetaScreen() {
                   alignItems: "center",
                   justifyContent: "flex-start",
                   mt: -1,
+                  gap: 1,
                 }}
               >
                 {data?.type === "show" &&
                   data?.leafCount === data?.viewedLeafCount && (
                     <CheckCircleRounded
                       sx={{
-                        color: "#FFFFFF",
+                        color: (theme) => theme.palette.primary.light,
                         fontSize: "large",
-                        mr: 1,
                       }}
                     />
                   )}
                 {data?.type === "movie" && (data?.viewCount ?? 0) > 0 && (
                   <CheckCircleRounded
                     sx={{
-                      color: "#FFFFFF",
+                      color: (theme) => theme.palette.primary.light,
                       fontSize: "large",
-                      mr: 1,
                     }}
                   />
                 )}
@@ -485,11 +491,11 @@ function MetaScreen() {
                     sx={{
                       fontSize: "medium",
                       fontWeight: "light",
-                      color: "#FFFFFF",
-                      border: "1px dotted #AAAAAA",
+                      color: (theme) => theme.palette.text.secondary,
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
                       borderRadius: "5px",
                       px: 1,
-                      py: -0.5,
+                      py: 0.2,
                     }}
                   >
                     {data?.contentRating}
@@ -500,8 +506,7 @@ function MetaScreen() {
                     sx={{
                       fontSize: "medium",
                       fontWeight: "light",
-                      color: "#FFFFFF",
-                      ml: data?.contentRating ? 1 : 0,
+                      color: (theme) => theme.palette.text.secondary,
                     }}
                   >
                     {data?.year}
@@ -512,9 +517,7 @@ function MetaScreen() {
                     sx={{
                       fontSize: "medium",
                       fontWeight: "light",
-                      color: "#FFFFFF",
-
-                      ml: 1,
+                      color: (theme) => theme.palette.text.secondary,
                     }}
                   >
                     {data?.rating}
@@ -526,8 +529,7 @@ function MetaScreen() {
                       sx={{
                         fontSize: "medium",
                         fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
+                        color: (theme) => theme.palette.text.secondary,
                       }}
                     >
                       {durationToText(data?.duration)}
@@ -540,8 +542,7 @@ function MetaScreen() {
                       sx={{
                         fontSize: "medium",
                         fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
+                        color: (theme) => theme.palette.text.secondary,
                       }}
                     >
                       {data?.childCount > 1
@@ -560,20 +561,20 @@ function MetaScreen() {
                   alignItems: "center",
                   justifyContent: "flex-start",
                   gap: 2,
-                  mt: 1,
+                  mt: 2,
                 }}
               >
                 <Button
                   variant="contained"
                   sx={{
-                    backgroundColor: "#CCCCCC",
-                    color: "#000000",
+                    height: "38px",
+                    backgroundColor: (theme) => theme.palette.background.paper,
+                    color: (theme) => theme.palette.text.primary,
                     fontWeight: "bold",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     "&:hover": {
-                      backgroundColor: "primary.main",
-                      gap: 1.5,
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                     },
                     gap: 1,
                     transition: "all 0.2s ease-in-out",
@@ -616,45 +617,26 @@ function MetaScreen() {
                         : ""
                     }E${data?.OnDeck.Metadata.index}`}
                 </Button>
-                <IconButton
-                  sx={{
-                    backgroundColor: "#202020",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    border: "1px solid #FFFFFF",
-                    "&:hover": {
-                      backgroundColor: "primary.main",
-                    },
-                  }}
-                  onClick={() => {
-                    if (!data) return;
-                    if (WatchList.isOnWatchList(data?.guid as string))
-                      WatchList.removeItem(data?.guid as string);
-                    else WatchList.addItem(data);
-                  }}
-                >
-                  {WatchList.isOnWatchList(data?.guid as string) ? (
-                    <BookmarkRounded fontSize="medium" />
-                  ) : (
-                    <BookmarkBorderRounded fontSize="medium" />
-                  )}
-                </IconButton>
+
+                <WatchListButton item={data as Plex.Metadata} />
 
                 {data && <RatingButton item={data} />}
 
-                <IconButton
+                <Button
+                  variant="contained"
                   sx={{
-                    backgroundColor: "#202020",
-                    color: "#FFFFFF",
+                    height: "38px",
+                    backgroundColor: (theme) => theme.palette.background.paper,
+                    color: (theme) => theme.palette.text.primary,
                     fontWeight: "bold",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    border: "1px solid #FFFFFF",
                     "&:hover": {
-                      backgroundColor: "primary.main",
+                      backgroundColor: (theme) => theme.palette.primary.main,
                     },
+                    transition: "all 0.2s ease-in-out",
+                    display: "flex",
+                    gap: 1,
                   }}
                   onClick={async () => {
                     if (!data) return;
@@ -697,7 +679,7 @@ function MetaScreen() {
                       <CheckCircleOutlineRounded fontSize="small" />
                     )
                   ) : null}
-                </IconButton>
+                </Button>
               </Box>
 
               <Box
@@ -711,13 +693,19 @@ function MetaScreen() {
                   mt: 2,
                 }}
               >
-                <Typography>Genres: </Typography>
+                <Typography color="text.secondary">Genres: </Typography>
                 {data?.Genre?.slice(0, 5).map((genre, index) => (
                   <Typography
+                    key={genre.id}
                     sx={{
-                      color: "#FFFFFF",
-                      fontWeight: "bold",
+                      color: (theme) => theme.palette.text.primary,
+                      fontWeight: "medium",
                       cursor: "pointer",
+                      "&:hover": {
+                        color: (theme) => theme.palette.primary.main,
+                        textDecoration: "none",
+                      },
+                      transition: "all 0.2s ease",
                     }}
                     onClick={() => {
                       setSearchParams(
@@ -734,7 +722,7 @@ function MetaScreen() {
               </Box>
 
               <Collapse in={Boolean(languages || subTitles)}>
-                <Box>
+                <Box sx={{ mt: 1 }}>
                   <Box
                     sx={{
                       width: "100%",
@@ -747,13 +735,13 @@ function MetaScreen() {
                   >
                     {languages && languages.length > 0 && (
                       <>
-                        <Typography>Audio: </Typography>
+                        <Typography color="text.secondary">Audio: </Typography>
                         {languages.slice(0, 10).map((lang, index) => (
                           <Typography
                             key={index}
                             sx={{
-                              color: "#FFFFFF",
-                              fontWeight: "bold",
+                              color: (theme) => theme.palette.text.primary,
+                              fontWeight: "medium",
                             }}
                           >
                             {lang}
@@ -780,13 +768,15 @@ function MetaScreen() {
                   >
                     {subTitles && subTitles.length > 0 && (
                       <>
-                        <Typography>Subtitles: </Typography>
+                        <Typography color="text.secondary">
+                          Subtitles:{" "}
+                        </Typography>
                         {subTitles.slice(0, 10).map((lang, index) => (
                           <Typography
                             key={index}
                             sx={{
-                              color: "#FFFFFF",
-                              fontWeight: "bold",
+                              color: (theme) => theme.palette.text.primary,
+                              fontWeight: "medium",
                             }}
                           >
                             {lang}
@@ -815,6 +805,7 @@ function MetaScreen() {
                   maxInlineSize: "100%",
                   userSelect: "none",
                   cursor: "zoom-in",
+                  color: (theme) => theme.palette.text.secondary,
                 }}
                 onClick={() => {
                   if (!data?.summary) return;
@@ -894,7 +885,9 @@ function MetaScreen() {
                 >
                   {data?.type === "show" &&
                     data?.Children?.Metadata?.map((season, index) => (
-                      <MenuItem value={index}>{season.title}</MenuItem>
+                      <MenuItem key={index} value={index}>
+                        {season.title}
+                      </MenuItem>
                     ))}
                 </Select>
               )}
@@ -902,9 +895,11 @@ function MetaScreen() {
 
           <Divider sx={{ mb: 2, width: "100%" }} />
 
-          {page === 0 && MetaPage1(data, loading, episodes, navigate)}
-          {page === 1 && MetaPage2(data)}
-          {page === 2 && MetaPage3(data)}
+          <AnimatePresence mode="wait">
+            {page === 0 && MetaPage1(data, loading, episodes, navigate)}
+            {page === 1 && MetaPage2(data)}
+            {page === 2 && MetaPage3(data)}
+          </AnimatePresence>
         </Box>
       </Box>
     </Backdrop>
@@ -940,7 +935,7 @@ function MetaPage1(
       {data?.type === "movie" && data.Related?.Hub?.[0] && (
         <Grid container spacing={2}>
           {data.Related?.Hub?.[0]?.Metadata?.slice(0, 10).map((movie) => (
-            <Grid item xs={4}>
+            <Grid size={{ xs: 4 }}>
               <MovieItem item={movie} />
             </Grid>
           ))}
@@ -965,6 +960,11 @@ function MetaPage1(
 
       {data?.type === "show" && episodes && (
         <Box
+          component={motion.div}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
           sx={{
             width: "100%",
             display: "flex",
@@ -998,6 +998,11 @@ function MetaPage2(data: Plex.Metadata | undefined) {
 
   return (
     <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
       sx={{
         width: "100%",
         display: "flex",
@@ -1030,9 +1035,9 @@ function MetaPage2(data: Plex.Metadata | undefined) {
             {hub.title}
           </Typography>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ width: "100%"}}>
             {hub.Metadata?.map((item) => (
-              <Grid item lg={3} md={4} sm={6} xs={12}>
+              <Grid size={{ lg: 3, md: 4, sm: 6, xs: 12 }}>
                 <MovieItem item={item} />
               </Grid>
             ))}
@@ -1046,6 +1051,11 @@ function MetaPage2(data: Plex.Metadata | undefined) {
 function MetaPage3(data: Plex.Metadata | undefined) {
   return (
     <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
       sx={{
         width: "100%",
         display: "flex",
@@ -1098,95 +1108,96 @@ function ActorItem({
   const [, setSearchParams] = useSearchParams();
 
   return (
-    <Grid item xl={3} lg={4} md={6} sm={6} xs={6} ref={ref}>
+    <Grid size={{ xl: 3, lg: 4, md: 6, sm: 6, xs: 6 }} ref={ref}>
       {inView ? (
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: "20px",
+            backgroundColor: (theme) =>
+              alpha(theme.palette.background.paper, 0.4),
+            padding: "10px 20px",
+            borderRadius: "10px",
+            userSelect: "none",
+            cursor: "pointer",
+            transition: "transform 0.2s ease",
+
+            "&:hover": {
+              backgroundColor: (theme) =>
+                alpha(theme.palette.background.paper, 0.7),
+              transform: "translateY(-2px)",
+            },
+          }}
+          onClick={() => {
+            setSearchParams(
+              new URLSearchParams({
+                bkey: `/library/sections/${data.librarySectionID}/actor/${role.id}`,
+              })
+            );
+          }}
+        >
+          <Avatar
+            src={`${getTranscodeImageURL(
+              `${role.thumb}?X-Plex-Token=${localStorage.getItem(
+                "accessToken"
+              )}`,
+              200,
+              200
+            )}`}
+            sx={{
+              width: "25%",
+              height: "auto",
+              aspectRatio: "1/1",
+              borderRadius: "50%",
+            }}
+          />
+
           <Box
             sx={{
-              width: "100%",
+              width: "75%",
               display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: "20px",
-              backgroundColor: "#00000055",
-              padding: "10px 20px",
-              borderRadius: "10px",
-
-              userSelect: "none",
-              cursor: "pointer",
-
-              "&:hover": {
-                backgroundColor: "#00000088",
-                transition: "all 0.2s ease",
-              },
-
-              transition: "all 0.5s ease",
-            }}
-            onClick={() => {
-              setSearchParams(
-                new URLSearchParams({
-                  bkey: `/library/sections/${data.librarySectionID}/actor/${role.id}`,
-                })
-              );
+              flexDirection: "column",
+              alignItems: "flex-start",
+              overflow: "hidden",
             }}
           >
-            <Avatar
-              src={`${getTranscodeImageURL(
-                `${role.thumb}?X-Plex-Token=${localStorage.getItem(
-                  "accessToken"
-                )}`,
-                200,
-                200
-              )}`}
+            <Typography
               sx={{
-                width: "25%",
-                height: "auto",
-                aspectRatio: "1/1",
-                borderRadius: "50%",
-              }}
-            />
-
-            <Box
-              sx={{
-                width: "75%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                overflow: "hidden",
+                fontSize: "1rem",
+                color: (theme) => theme.palette.text.primary,
+                fontWeight: "medium",
               }}
             >
-              <Typography
-                sx={{
-                  fontSize: "1rem",
-                  color: "#FFFFFF",
-                }}
-              >
-                {role.tag}
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.75rem",
-                  color: "#BBBBBB",
-
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  whiteSpace: "nowrap",
-
-                  width: "100%",
-                }}
-              >
-                {role.role}
-              </Typography>
-            </Box>
+              {role.tag}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: "0.75rem",
+                color: (theme) => theme.palette.text.secondary,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                whiteSpace: "nowrap",
+                width: "100%",
+              }}
+            >
+              {role.role}
+            </Typography>
           </Box>
+        </Box>
       ) : (
         <Box
           sx={{
             width: "100%",
-            height: "100px", // Adjust height as needed
-            backgroundColor: "#00000055",
+            height: "100px",
+            backgroundColor: (theme) =>
+              alpha(theme.palette.background.paper, 0.2),
+            borderRadius: "10px",
           }}
         />
       )}
@@ -1223,6 +1234,7 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            backgroundColor: (theme) => theme.palette.background.paper,
           },
         }}
       >
@@ -1250,17 +1262,21 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
           }}
         />
       </Popover>
-      <IconButton
+      <Button
+        variant="contained"
         sx={{
-          backgroundColor: "#202020",
-          color: "#FFFFFF",
+          height: "38px",
+          backgroundColor: (theme) => theme.palette.background.paper,
+          color: (theme) => theme.palette.text.primary,
           fontWeight: "bold",
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          border: "1px solid #FFFFFF",
           "&:hover": {
-            backgroundColor: "primary.main",
+            backgroundColor: (theme) => theme.palette.primary.main,
           },
+          transition: "all 0.2s ease-in-out",
+          display: "flex",
+          gap: 1,
         }}
         onClick={(e) => {
           setAnchorEl(e.currentTarget);
@@ -1277,7 +1293,7 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
         ) : (
           <StarOutlineRounded fontSize="small" />
         )}
-      </IconButton>
+      </Button>
     </>
   );
 }
@@ -1297,9 +1313,18 @@ function EpisodeItem({
         flexDirection: "row",
         alignItems: "flex-start",
         justifyContent: "flex-start",
-        gap: 1,
+        gap: 2,
         userSelect: "none",
         cursor: "pointer",
+        borderRadius: "10px",
+        p: 1.5,
+        mb: 1,
+        transition: "all 0.5s ease",
+        "&:hover": {
+          backgroundColor: (theme) =>
+            alpha(theme.palette.background.paper, 0.5),
+          transition: "all 0.2s ease",
+        },
 
         // on hover get the 2nd child and then the 1st child of that
         "&:hover > :nth-child(2)": {
@@ -1327,7 +1352,7 @@ function EpisodeItem({
           sx={{
             fontSize: "1.25rem",
             fontWeight: "bold",
-            color: "#FFFFFF",
+            color: (theme) => theme.palette.text.primary,
             textAlign: "center",
           }}
         >
@@ -1338,7 +1363,7 @@ function EpisodeItem({
       <Box
         sx={{
           width: "20%",
-          borderRadius: "5px",
+          borderRadius: "8px",
           aspectRatio: "16/9",
           backgroundImage: `url(${getTranscodeImageURL(
             `${item.thumb}?X-Plex-Token=${localStorage.getItem("accessToken")}`,
@@ -1350,15 +1375,14 @@ function EpisodeItem({
           backgroundBlendMode: "darken",
           overflow: "hidden",
           whiteSpace: "nowrap",
-          clipPath: "inset(0px 0px -10px 0px)",
-          transition: "all 0.5s ease",
-
+          transition: "all 0.3s ease",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
           justifyContent: "flex-start",
-
           position: "relative",
+          boxShadow: (theme) =>
+            `0 4px 6px -1px ${alpha(theme.palette.common.black, 0.2)}`,
         }}
       >
         <PlayArrowRounded
@@ -1369,8 +1393,7 @@ function EpisodeItem({
             opacity: 0,
             backgroundColor: "#00000088",
             borderRadius: "50%",
-
-            transition: "all 0.5s ease-out",
+            transition: "all 0.3s ease-out",
           }}
         />
 
@@ -1382,12 +1405,15 @@ function EpisodeItem({
             variant="determinate"
             sx={{
               width: "100%",
-              height: "5%",
-              backgroundColor: "#00000088",
-              borderRadius: "5px",
+              height: "4px",
+              backgroundColor: (theme) =>
+                alpha(theme.palette.common.black, 0.5),
 
               position: "absolute",
               bottom: 0,
+              "& .MuiLinearProgress-bar": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
             }}
           />
         )}
@@ -1416,7 +1442,7 @@ function EpisodeItem({
             sx={{
               fontSize: "1.5rem",
               fontWeight: "bold",
-              color: "#FFFFFF",
+              color: (theme) => theme.palette.text.primary,
               // make it so the text doesnt resize the parent nor overflow max 3 rows
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -1436,6 +1462,7 @@ function EpisodeItem({
               alignItems: "center",
               justifyContent: "flex-start",
               gap: 1,
+              color: (theme) => theme.palette.text.secondary,
             }}
           >
             {getMinutes(item.duration)} Min.
@@ -1446,9 +1473,8 @@ function EpisodeItem({
           sx={{
             fontSize: "medium",
             fontWeight: "light",
-            color: "#FFFFFF",
-            opacity: 0.7,
-            mt: -0.5,
+            color: (theme) => theme.palette.text.secondary,
+            mt: 0.5,
             // make it so the text doesnt resize the parent nor overflow max 3 rows
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -1477,21 +1503,39 @@ function TabButton({
   return (
     <Typography
       sx={{
-        fontSize: "1.5rem",
+        fontSize: "1.25rem",
         fontWeight: "bold",
         textTransform: "uppercase",
         letterSpacing: "0.1em",
-        color: selected ? "#AAAAAA" : "#333333",
-
+        color: selected
+          ? (theme) => theme.palette.primary.main
+          : (theme) => theme.palette.text.disabled,
         cursor: "pointer",
         userSelect: "none",
+        position: "relative",
+        pb: 0.5,
 
-        "&:hover": {
-          color: "#CCCCCC",
-          transition: "all 0.5s ease-in-out",
+        "&:after": {
+          content: '""',
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: selected ? "100%" : "0%",
+          height: "2px",
+          backgroundColor: (theme) => theme.palette.primary.main,
+          transition: "all 0.3s ease",
         },
 
-        transition: "all 0.75s ease-in-out",
+        "&:hover": {
+          color: (theme) =>
+            selected ? theme.palette.primary.main : theme.palette.text.primary,
+
+          "&:after": {
+            width: "100%",
+          },
+        },
+
+        transition: "all 0.3s ease",
       }}
       onClick={onClick}
     >

@@ -9,7 +9,7 @@ export function getBackendURL() {
 }
 
 export function ProxiedRequest(url: string, method: "GET" | "POST" | "PUT", headers?: Record<string, string>, data?: any) {
-    const DISABLE_PROXY = config.DISABLE_PROXY === true ?? false;
+    const DISABLE_PROXY = config.DISABLE_PROXY === true;
 
     if(DISABLE_PROXY) return axios({ url: (localStorage.getItem("server") + url), method, headers, data }).catch((err) => {
         console.log(err);

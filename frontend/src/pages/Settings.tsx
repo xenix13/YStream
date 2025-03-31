@@ -1,9 +1,10 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
 import React from "react";
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
 import SettingsInfo from "./settings/SettingsInfo";
 import SettingsPlayback from "./settings/SettingsPlayback";
 import { useUserSettings } from "../states/UserSettingsState";
+import SettingsRecommendations from "./settings/SettingsRecommendations";
 
 function Settings() {
   const { loaded } = useUserSettings();
@@ -54,6 +55,7 @@ function Settings() {
 
         <SettingsDivider title="Experience" />
         <SettingsItem title="Playback" link="/settings/experience-playback" />
+        <SettingsItem title="Recommendations" link="/settings/experience-recommendations" />
       </Box>
 
       <Box
@@ -75,6 +77,7 @@ function Settings() {
           <Route path="/info" element={<SettingsInfo />} />
 
           <Route path="/experience-playback" element={<SettingsPlayback />} />
+          <Route path="/experience-recommendations" element={<SettingsRecommendations />} />
         </Routes>
       </Box>
     </Box>
@@ -110,6 +113,8 @@ function SettingsDivider({ title }: { title: string }) {
 }
 
 function SettingsItem({ title, link }: { title: string; link: string }) {
+  const { pathname } = useLocation();
+
   return (
     <Link to={link}>
       <Box
@@ -123,6 +128,8 @@ function SettingsItem({ title, link }: { title: string; link: string }) {
           borderRadius: "10px",
           pl: "18px",
 
+          transition: "all 0.3s ease",
+
           "&:hover": {
             backgroundColor: "#333",
           },
@@ -130,7 +137,7 @@ function SettingsItem({ title, link }: { title: string; link: string }) {
       >
         <Typography
           sx={{
-            color: "#fff",
+            color: theme => pathname === link ? theme.palette.primary.main : theme.palette.text.primary,
             fontSize: "1rem",
             userSelect: "none",
           }}

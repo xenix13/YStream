@@ -18,7 +18,7 @@ import {
   Divider,
   ListItemIcon,
 } from "@mui/material";
-import React from "react";
+import React, { JSX } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   getTranscodeImageURL,
@@ -28,7 +28,7 @@ import {
   setMediaPlayedStatus,
 } from "../plex";
 import { durationToText } from "./MovieItemSlider";
-import { useWatchListCache } from "../states/WatchListCache";
+import { useWatchListCache, WatchListCacheEmitter } from "../states/WatchListCache";
 import { useBigReader } from "./BigReader";
 
 function MovieItem({
@@ -271,26 +271,21 @@ function MovieItem({
           minWidth: itemsPerPage
             ? `calc((100vw / ${itemsPerPage}) - 10px - (5vw / ${itemsPerPage}))`
             : "100%",
-          backgroundColor: "#1A1A1A",
+          backgroundColor: "rgba(18, 18, 22, 0.9)",
 
           borderRadius: "7px",
           overflow: "hidden",
           mb: "0px",
+          position: "relative",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
 
           "&:hover": {
-            // backgroundColor: "#000000AA",
-            // backgroundBlendMode: "darken",
-            // backgroundSize: "cover",
-            // backgroundPosition: "center",
-
-            transform: "scale(1.15)",
-            transition: "all 0.2s ease, transform 0.5s ease",
+            transform: "scale(1.08)",
+            transition: "all 0.4s ease",
             zIndex: 1000,
-            boxShadow: "0px 0px 20px #000000",
+            boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.3)",
             position: "relative",
-
             pb: "10px",
-
             mb: "-42px",
           },
 
@@ -301,14 +296,10 @@ function MovieItem({
               : 3
           })`]: {
             height: "32px",
+            opacity: 1,
           },
 
-          // "&:hover > :nth-child(3)": {
-          //   opacity: 1,
-          //   transition: "all 0.25s ease-in",
-          // },
-
-          transition: "all 0.2s ease, transform 0.5s ease",
+          transition: "all 0.4s ease, transform 0.4s ease",
           cursor: "pointer",
         }}
         onContextMenu={(e) => {
@@ -378,27 +369,24 @@ function MovieItem({
               item.viewCount > 0)) && (
             <Box
               sx={{
-                width: "80px",
-                height: "40px",
                 position: "absolute",
-                top: "-6px",
-                right: "-26px",
-                transform: "rotate(45deg)",
-
-                backgroundColor: "#000000AA",
-
+                top: "10px",
+                right: "10px",
+                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                borderRadius: "50%",
+                width: "32px",
+                height: "32px",
                 display: "flex",
-                flexDirection: "row",
-                alignItems: "flex-end",
+                alignItems: "center",
                 justifyContent: "center",
-                padding: "4px",
+                zIndex: 10,
               }}
             >
               <Tooltip title="Watched" arrow placement="top">
                 <CheckCircleOutlineRounded
-                  fontSize="medium"
+                  fontSize="small"
                   sx={{
-                    transform: "rotate(-45deg)",
+                    color: (theme) => theme.palette.primary.light,
                   }}
                 />
               </Tooltip>
@@ -412,6 +400,11 @@ function MovieItem({
             value={((item?.viewOffset ?? 0) / item.duration) * 100}
             sx={{
               width: "100%",
+              height: "3px",
+              bgcolor: "rgba(255, 255, 255, 0.1)",
+              "& .MuiLinearProgress-bar": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
             }}
           />
         )}
@@ -423,21 +416,23 @@ function MovieItem({
             flexDirection: "column",
             alignItems: "flex-start",
             justifyContent: "flex-end",
-            padding: "10px",
+            padding: "16px",
             userSelect: "none",
-            transition: "all 0.5s ease",
+            transition: "all 0.4s ease",
             transform: "translateX(0%)",
-            transformStyle: "preserve-3d",
+            position: "relative",
+            zIndex: 5,
           }}
         >
           <Typography
             sx={{
-              fontSize: "14px",
-              fontWeight: "700",
-              letterSpacing: "0.15em",
-              color: theme => theme.palette.primary.main,
+              fontSize: "12px",
+              fontWeight: "500",
+              letterSpacing: "0.05em",
+              color: (theme) => theme.palette.primary.light,
               textTransform: "uppercase",
-              mt: "2px",
+              opacity: 0.9,
+              mb: 0.5,
             }}
           >
             {item.type} {item.type === "episode" && item.index}
@@ -445,11 +440,11 @@ function MovieItem({
 
           <Typography
             sx={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
+              fontSize: "1.2rem",
+              fontWeight: "600",
               color: "#FFFFFF",
               "@media (max-width: 2000px)": {
-                fontSize: "1.2rem",
+                fontSize: "1.1rem",
               },
               textOverflow: "ellipsis",
               overflow: "hidden",
@@ -472,18 +467,16 @@ function MovieItem({
                 });
               }}
               sx={{
-                fontSize: "1rem",
+                fontSize: "0.9rem",
                 fontWeight: "normal",
                 color: "#FFFFFF",
-                opacity: 0.7,
-                mt: "4px",
-                mb: 0.5,
-
-                transition: "all 0.5s ease",
+                opacity: 0.75,
+                mb: 1,
+                transition: "opacity 0.4s ease",
                 "&:hover": {
                   opacity: 1,
+                  textDecoration: "none",
                 },
-
                 textOverflow: "ellipsis",
                 overflow: "hidden",
                 maxLines: 1,
@@ -547,9 +540,10 @@ function MovieItem({
             {item.duration && ["episode", "movie"].includes(item.type) && (
               <Typography
                 sx={{
-                  fontSize: "14px",
-                  fontWeight: "light",
+                  fontSize: "13px",
+                  fontWeight: "400",
                   color: "#FFFFFF",
+                  opacity: 0.7,
                 }}
               >
                 {durationToText(item.duration)}
@@ -560,9 +554,10 @@ function MovieItem({
               (item.seasonCount ?? item.childCount) && (
                 <Typography
                   sx={{
-                    fontSize: "14px",
-                    fontWeight: "light",
+                    fontSize: "13px",
+                    fontWeight: "400",
                     color: "#FFFFFF",
+                    opacity: 0.7,
                   }}
                 >
                   {(item.seasonCount ?? item.childCount ?? 1) > 1
@@ -576,9 +571,10 @@ function MovieItem({
             {item.year && (
               <Typography
                 sx={{
-                  fontSize: "14px",
-                  fontWeight: "light",
+                  fontSize: "13px",
+                  fontWeight: "400",
                   color: "#FFFFFF",
+                  opacity: 0.7,
                 }}
               >
                 {item.year}
@@ -592,12 +588,11 @@ function MovieItem({
             width: "100%",
             height: "0px", // 32px
             overflow: "hidden",
-
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            transition: "all 0.2s ease",
+            transition: "all 0.4s ease",
           }}
         >
           <Box
@@ -606,9 +601,9 @@ function MovieItem({
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              padding: "0px 16px",
               gap: 1,
-              padding: "2px 10px",
             }}
           >
             <Button
@@ -616,21 +611,19 @@ function MovieItem({
               sx={{
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#F4F8FF",
-                color: "#1A1A1A",
+                backgroundColor: (theme) => theme.palette.background.paper,
+                color: (theme) => theme.palette.primary.contrastText,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 "&:hover": {
-                  backgroundColor: "primary.main",
+                  backgroundColor: (theme) => theme.palette.primary.dark,
                 },
-                gap: 1,
-                transition: "all 0.2s ease-in-out",
+                gap: 0.5,
+                transition: "all 0.4s ease-in-out",
                 padding: "0px 10px",
-                fontSize: "12px",
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
+                fontSize: "13px",
+                borderRadius: "6px",
+                boxShadow: "none",
               }}
               disabled={playButtonLoading}
               onClick={async (e) => {
@@ -639,10 +632,10 @@ function MovieItem({
               }}
             >
               {playButtonLoading ? (
-                <CircularProgress size="small" />
+                <CircularProgress size={16} color="inherit" />
               ) : (
                 <>
-                  <PlayArrowRounded fontSize="small" /> Play
+                  <PlayArrowRounded style={{ fontSize: "18px" }} /> Play
                 </>
               )}
             </Button>
@@ -650,33 +643,6 @@ function MovieItem({
             <WatchListButton item={item} />
           </Box>
         </Box>
-        {/* <Box sx={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          backgroundColor: "#00000055",
-          backgroundImage: ["episode"].includes(item.type)
-            ? `url(${getTranscodeImageURL(
-                `${item.thumb}?X-Plex-Token=${localStorage.getItem(
-                  "accessToken"
-                )}`,
-                300,
-                170
-              )})`
-            : `url(${getTranscodeImageURL(
-                `${item.art}?X-Plex-Token=${localStorage.getItem("accessToken")}`,
-                300,
-                170
-              )})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(10vw)",
-  
-          zIndex: -1,
-          transform: "translateZ(-10px) scale(1)",
-          opacity: 0,
-          transition: "all 2s ease",
-        }}></Box> */}
       </Box>
     </>
   );
@@ -686,44 +652,53 @@ export default MovieItem;
 
 export function WatchListButton({ item }: { item: Plex.Metadata }) {
   const WatchList = useWatchListCache();
+  const [isLoading, setIsLoading] = React.useState(false);
 
   return (
     <Button
       variant="contained"
       sx={{
-        width: "fit-content",
-        height: "100%",
-        backgroundColor: "#5A5A5A",
-        color: "#F4F8FF",
-        fontSize: "12px",
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
+        width: "48px",
+        height: "38px",
+        backgroundColor: (theme) => theme.palette.background.paper,
+        color: theme => theme.palette.text.primary,
+        borderRadius: "6px",
         "&:hover": {
-          backgroundColor: "#333333",
+          backgroundColor: (theme) => theme.palette.primary.dark,
         },
-        gap: 1,
-        transition: "all 0.2s ease-in-out",
-
+        transition: "all 0.4s ease-in-out",
+        boxShadow: "none",
+        
         display: "flex",
-        flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-
-        minWidth: "20px",
+        position: "relative",
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (!item) return;
+        if (!item || isLoading) return;
+        setIsLoading(true);
+
+        WatchListCacheEmitter.once("watchListUpdate", () => {
+          setIsLoading(false);
+        });
+
         if (WatchList.isOnWatchList(item.guid))
           return WatchList.removeItem(item.guid);
 
         WatchList.addItem(item);
       }}
     >
-      {WatchList.isOnWatchList(item.guid) ? (
-        <BookmarkRounded fontSize="small" />
+      {isLoading ? (
+        <CircularProgress size={14} color="inherit" />
       ) : (
-        <BookmarkBorderRounded fontSize="small" />
+        <>
+          {WatchList.isOnWatchList(item.guid) ? (
+            <BookmarkRounded fontSize="small" />
+          ) : (
+            <BookmarkBorderRounded fontSize="small" />
+          )}
+        </>
       )}
     </Button>
   );

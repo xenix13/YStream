@@ -252,8 +252,8 @@ function Watch() {
     };
 
     const endPlayback = async () => {
-      navigate("/sync/waitingroom")
-    }
+      navigate("/sync/waitingroom");
+    };
 
     const pausePlayback = async () => {
       setPlaying(false);
@@ -371,8 +371,16 @@ function Watch() {
             else socket?.emit("EVNT_SYNC_RESUME");
             return !state;
           }),
-        j: () => player.current?.seekTo(player.current.getCurrentTime() - 10),
-        l: () => player.current?.seekTo(player.current.getCurrentTime() + 10),
+        j: () => {
+          const l = player.current?.getCurrentTime() ?? 0;
+          player.current?.seekTo(l - 10);
+          socket?.emit("EVNT_SYNC_SEEK", l - 10);
+        },
+        l: () => {
+          const l = player.current?.getCurrentTime() ?? 0;
+          player.current?.seekTo(l + 10);
+          socket?.emit("EVNT_SYNC_SEEK", l + 10);
+        },
         s: () => {
           if (!metadata || !player.current) return;
           // if there is a marker like credits skip it
@@ -426,16 +434,28 @@ function Watch() {
             document.documentElement.requestFullscreen();
           } else document.exitFullscreen();
         },
-        ArrowLeft: () =>
-          player.current?.seekTo(player.current.getCurrentTime() - 10),
-        ArrowRight: () =>
-          player.current?.seekTo(player.current.getCurrentTime() + 10),
+        ArrowLeft: () => {
+          const l = player.current?.getCurrentTime() ?? 0;
+          player.current?.seekTo(l - 10);
+          socket?.emit("EVNT_SYNC_SEEK", l - 10);
+        },
+        ArrowRight: () => {
+          const l = player.current?.getCurrentTime() ?? 0;
+          player.current?.seekTo(l + 10);
+          socket?.emit("EVNT_SYNC_SEEK", l + 10);
+        },
         ArrowUp: () => setVolume((state) => Math.min(state + 5, 100)),
         ArrowDown: () => setVolume((state) => Math.max(state - 5, 0)),
-        ",": () =>
-          player.current?.seekTo(player.current.getCurrentTime() - 0.04),
-        ".": () =>
-          player.current?.seekTo(player.current.getCurrentTime() + 0.04),
+        ",": () => {
+          const l = player.current?.getCurrentTime() ?? 0;
+          player.current?.seekTo(l - 0.04);
+          socket?.emit("EVNT_SYNC_SEEK", l - 0.04);
+        },
+        ".": () => {
+          const l = player.current?.getCurrentTime() ?? 0;
+          player.current?.seekTo(l + 0.04);
+          socket?.emit("EVNT_SYNC_SEEK", l + 0.04);
+        },
       };
 
       if (actions[e.key]) actions[e.key]();
@@ -453,30 +473,40 @@ function Watch() {
         open={showError !== false}
         sx={{
           zIndex: 10000,
+          backdropFilter: "blur(8px)",
         }}
       >
-        <Box
+        <Paper
+          elevation={10}
           sx={{
-            p: 2,
-            background: theme.palette.error.main,
-            color: theme.palette.error.contrastText,
+            p: 4,
+            background: "#121216",
+            color: theme.palette.text.primary,
+            borderRadius: 2,
+            maxWidth: "500px",
+            width: "90%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            border: `1px solid ${theme.palette.divider}`,
           }}
         >
-          <Typography>{showError}</Typography>
+          <Typography variant="h6" sx={{ mb: 3, textAlign: "center" }}>
+            {showError}
+          </Typography>
           <Box
             sx={{
               display: "flex",
               flexDirection: "row",
               gap: 2,
-              mt: 2,
+              width: "100%",
+              justifyContent: "center",
             }}
           >
             <Button
-              variant="contained"
+              variant="outlined"
+              color="primary"
               onClick={() => {
                 setShowError(false);
 
@@ -496,7 +526,8 @@ function Watch() {
               Reload
             </Button>
             <Button
-              variant="contained"
+              variant="outlined"
+              color="secondary"
               onClick={() => {
                 setShowError(false);
                 if (!metadata) return navigate("/");
@@ -519,7 +550,7 @@ function Watch() {
               Home
             </Button>
             <Button
-              variant="contained"
+              variant="text"
               onClick={() => {
                 setShowError(false);
               }}
@@ -527,7 +558,7 @@ function Watch() {
               Ignore
             </Button>
           </Box>
-        </Box>
+        </Paper>
       </Backdrop>
       <Box
         sx={{
@@ -565,14 +596,17 @@ function Watch() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "flex-start",
-            px: "5vw",
-            gap: "5vw",
-
+            px: "8vw",
+            gap: "4vw",
             opacity: showInfo ? 1 : 0,
-            transition: "all 0.5s ease-in-out",
-
+            transition: "all 0.6s cubic-bezier(0.23, 1, 0.32, 1)",
             zIndex: 1000,
             pointerEvents: "none",
+
+            ...(metadata && metadata?.type === "movie" && {
+              justifyContent: "center",
+              padding: "0",
+            })
           }}
         >
           <img
@@ -587,35 +621,55 @@ function Watch() {
             style={{
               height: "25vw",
               width: "auto",
-              borderRadius: "10px",
-              boxShadow: "0px 0px 10px 0px #000000AA",
+              objectFit: "cover",
+              borderRadius: "1rem",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
               transform: `translateX(${
                 showInfo ? 0 : -40
               }vw) perspective(1000px) rotateY(${showInfo ? 0 : -30}deg)`,
-              transition: "transform 0.5s ease-in-out",
+              transition: "transform 0.7s cubic-bezier(0.23, 1, 0.32, 1)",
               transitionDelay: "0.2s",
+              border: "2px solid rgba(255,255,255,0.1)"
             }}
           />
           <Box
             sx={{
-              width: "40vw",
+              width: "45vw",
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-start",
               justifyContent: "center",
               textAlign: "left",
               transform: `translateX(${showInfo ? 0 : -80}vw)`,
-              transition: "transform 0.5s ease-in-out",
-              transitionDelay: "0s",
+              transition: "transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)",
+              transitionDelay: "0.1s",
             }}
           >
             {metadata && metadata?.type === "episode" && (
               <>
                 <Typography
                   sx={{
-                    fontSize: "2vw",
-                    fontWeight: "bold",
+                    fontSize: "0.9vw",
+                    color: theme.palette.primary.main,
+                    fontWeight: 500,
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    mb: 0.5,
+                  }}
+                >
+                  {showmetadata?.childCount &&
+                    showmetadata?.childCount > 1 &&
+                    `Season ${metadata.parentIndex}`}
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontSize: "2.5vw",
+                    fontWeight: 700,
                     color: "#FFF",
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.1,
+                    textShadow: "0 2px 4px rgba(0,0,0,0.3)",
                   }}
                 >
                   {metadata?.grandparentTitle}
@@ -623,24 +677,14 @@ function Watch() {
 
                 <Typography
                   sx={{
-                    fontSize: "1vw",
-                    color: "#FFF",
-                    mt: "-0.70vw",
+                    fontSize: "1.2vw",
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.9)",
+                    mt: 2,
+                    mb: 0.5,
                   }}
                 >
-                  {showmetadata?.childCount &&
-                    showmetadata?.childCount > 1 &&
-                    `Season ${metadata.parentIndex}`}
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "1vw",
-                    fontWeight: "bold",
-                    color: "#FFF",
-                    mt: "6px",
-                  }}
-                >
-                  {metadata?.title}: EP. {metadata?.index}
+                  {metadata?.title} <span style={{ opacity: 0.6 }}>· EP.{metadata?.index}</span>
                 </Typography>
 
                 <Box
@@ -648,17 +692,19 @@ function Watch() {
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
+                    flexWrap: "wrap",
                     justifyContent: "flex-start",
-                    mt: "2px",
-                    gap: 1,
+                    mt: 0,
+                    mb: 1,
+                    gap: 2,
                   }}
                 >
                   {metadata.year && (
                     <Typography
                       sx={{
-                        fontSize: "medium",
-                        fontWeight: "light",
-                        color: "#FFFFFF",
+                        fontSize: "0.8vw",
+                        fontWeight: 400,
+                        color: "rgba(255,255,255,0.7)",
                       }}
                     >
                       {metadata.year}
@@ -667,10 +713,9 @@ function Watch() {
                   {metadata.rating && (
                     <Typography
                       sx={{
-                        fontSize: "medium",
-                        fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
+                        fontSize: "0.8vw",
+                        fontWeight: 400,
+                        color: "rgba(255,255,255,0.7)",
                       }}
                     >
                       {metadata.rating}
@@ -679,14 +724,13 @@ function Watch() {
                   {metadata.contentRating && (
                     <Typography
                       sx={{
-                        fontSize: "medium",
-                        fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
-                        border: "1px dotted #AAAAAA",
-                        borderRadius: "5px",
+                        fontSize: "0.7vw",
+                        fontWeight: 500,
+                        color: "rgba(255,255,255,0.9)",
+                        border: `1px solid rgba(255,255,255,0.3)`,
+                        borderRadius: "4px",
                         px: 1,
-                        py: -0.5,
+                        py: 0.3,
                       }}
                     >
                       {metadata.contentRating}
@@ -696,10 +740,9 @@ function Watch() {
                     ["episode", "movie"].includes(metadata.type) && (
                       <Typography
                         sx={{
-                          fontSize: "medium",
-                          fontWeight: "light",
-                          color: "#FFFFFF",
-                          ml: 1,
+                          fontSize: "0.9vw",
+                          fontWeight: 400,
+                          color: "rgba(255,255,255,0.7)",
                         }}
                       >
                         {durationToText(metadata.duration)}
@@ -709,9 +752,22 @@ function Watch() {
 
                 <Typography
                   sx={{
-                    fontSize: "0.75vw",
-                    color: "#FFF",
-                    mt: "2px",
+                    fontSize: "1vw",
+                    color: "rgba(255,255,255,0.8)",
+                    lineHeight: 1.6,
+                    maxWidth: "90%",
+                    position: "relative",
+                    "&:before": {
+                      content: '""',
+                      position: "absolute",
+                      left: "-20px",
+                      top: "8px",
+                      bottom: "8px",
+                      width: "3px",
+                      background: theme.palette.primary.main,
+                      borderRadius: "4px",
+                      opacity: 0.8,
+                    }
                   }}
                 >
                   {metadata?.summary}
@@ -722,9 +778,12 @@ function Watch() {
               <>
                 <Typography
                   sx={{
-                    fontSize: "2vw",
-                    fontWeight: "bold",
+                    fontSize: "3.5vw",
+                    fontWeight: 700,
                     color: "#FFF",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.1,
+                    textShadow: "0 2px 4px rgba(0,0,0,0.3)",
                   }}
                 >
                   {metadata?.title}
@@ -735,17 +794,19 @@ function Watch() {
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
+                    flexWrap: "wrap",
                     justifyContent: "flex-start",
-                    mt: 0.5,
-                    gap: 1,
+                    mt: 2,
+                    mb: 3,
+                    gap: 2,
                   }}
                 >
                   {metadata.year && (
                     <Typography
                       sx={{
-                        fontSize: "medium",
-                        fontWeight: "light",
-                        color: "#FFFFFF",
+                        fontSize: "0.8vw",
+                        fontWeight: 400,
+                        color: "rgba(255,255,255,0.7)",
                       }}
                     >
                       {metadata.year}
@@ -754,10 +815,9 @@ function Watch() {
                   {metadata.rating && (
                     <Typography
                       sx={{
-                        fontSize: "medium",
-                        fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
+                        fontSize: "0.8vw",
+                        fontWeight: 400,
+                        color: "rgba(255,255,255,0.7)",
                       }}
                     >
                       {metadata.rating}
@@ -766,14 +826,13 @@ function Watch() {
                   {metadata.contentRating && (
                     <Typography
                       sx={{
-                        fontSize: "medium",
-                        fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
-                        border: "1px dotted #AAAAAA",
-                        borderRadius: "5px",
+                        fontSize: "0.7vw",
+                        fontWeight: 500,
+                        color: "rgba(255,255,255,0.9)",
+                        border: `1px solid rgba(255,255,255,0.3)`,
+                        borderRadius: "4px",
                         px: 1,
-                        py: -0.5,
+                        py: 0.3,
                       }}
                     >
                       {metadata.contentRating}
@@ -783,10 +842,9 @@ function Watch() {
                     ["episode", "movie"].includes(metadata.type) && (
                       <Typography
                         sx={{
-                          fontSize: "medium",
-                          fontWeight: "light",
-                          color: "#FFFFFF",
-                          ml: 1,
+                          fontSize: "0.8vw",
+                          fontWeight: 400,
+                          color: "rgba(255,255,255,0.7)",
                         }}
                       >
                         {durationToText(metadata.duration)}
@@ -794,20 +852,38 @@ function Watch() {
                     )}
                 </Box>
 
+                {metadata?.tagline && (
+                  <Typography
+                    sx={{
+                      fontSize: "1vw",
+                      fontWeight: 600,
+                      color: theme.palette.primary.main,
+                      mt: 1,
+                      mb: 2,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {metadata?.tagline}
+                  </Typography>
+                )}
                 <Typography
                   sx={{
                     fontSize: "1vw",
-                    fontWeight: "bold",
-                    color: "#FFF",
-                    mt: "10px",
-                  }}
-                >
-                  {metadata?.tagline}
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "0.75vw",
-                    color: "#FFF",
+                    color: "rgba(255,255,255,0.8)",
+                    lineHeight: 1.6,
+                    maxWidth: "90%",
+                    position: "relative",
+                    "&:before": {
+                      content: '""',
+                      position: "absolute",
+                      left: "-20px",
+                      top: "8px",
+                      bottom: "8px",
+                      width: "3px",
+                      background: theme.palette.primary.main,
+                      borderRadius: "4px",
+                      opacity: 0.8,
+                    }
                   }}
                 >
                   {metadata?.summary}
@@ -913,7 +989,9 @@ function Watch() {
                       if (!seekToAfterLoad.current)
                         seekToAfterLoad.current = progress;
                       setURL("");
-                      setURL(getUrl);
+                      setTimeout(() => {
+                        setURL(getUrl);
+                      }, 100);
                     }}
                   >
                     {qualityOption.bitrate === quality.bitrate && (
@@ -992,7 +1070,9 @@ function Watch() {
                       if (!seekToAfterLoad.current)
                         seekToAfterLoad.current = progress;
                       setURL("");
-                      setURL(getUrl);
+                      setTimeout(() => {
+                        setURL(getUrl);
+                      }, 100);
                     }}
                   >
                     <CheckRounded
@@ -1064,7 +1144,9 @@ function Watch() {
                     if (!seekToAfterLoad.current)
                       seekToAfterLoad.current = progress;
                     setURL("");
-                    setURL(getUrl);
+                    setTimeout(() => {
+                      setURL(getUrl);
+                    }, 100);
                   }}
                 >
                   {metadata?.Media[0].Part[0].Stream.filter(
@@ -1126,7 +1208,9 @@ function Watch() {
                       if (!seekToAfterLoad.current)
                         seekToAfterLoad.current = progress;
                       setURL("");
-                      setURL(getUrl);
+                      setTimeout(() => {
+                        setURL(getUrl);
+                      }, 100);
                     }}
                   >
                     <CheckRounded
@@ -1441,7 +1525,10 @@ function Watch() {
 
                     display: "flex",
                     flexDirection: "column",
-                    backgroundColor: settings["DISABLE_WATCHSCREEN_DARKENING"] === "true" ? "transparent" : "#000000AA",
+                    backgroundColor:
+                      settings["DISABLE_WATCHSCREEN_DARKENING"] === "true"
+                        ? "transparent"
+                        : "#000000AA",
                     pointerEvents: "none",
                   }}
                 >
@@ -1460,8 +1547,9 @@ function Watch() {
                   >
                     <IconButton
                       onClick={() => {
-                        if(room && !isHost) socket?.disconnect();
-                        if(room && isHost) socket?.emit("RES_SYNC_PLAYBACK_END");
+                        if (room && !isHost) socket?.disconnect();
+                        if (room && isHost)
+                          socket?.emit("RES_SYNC_PLAYBACK_END");
 
                         if (itemID && player.current)
                           getTimelineUpdate(
@@ -1602,7 +1690,9 @@ function Watch() {
                           )}
                         </IconButton>
 
-                        {playQueue && <NextEPButton queue={playQueue} />}
+                        {playQueue && !(room && !isHost) && (
+                          <NextEPButton queue={playQueue} />
+                        )}
                       </Box>
 
                       {metadata.type === "movie" && (
@@ -1683,7 +1773,7 @@ function Watch() {
                         <VolumeUpRounded fontSize="large" />
                       </IconButton>
 
-                      {(metadata.type === "episode" && !(room && !isHost)) && (
+                      {metadata.type === "episode" && !(room && !isHost) && (
                         <WatchShowChildView item={metadata} />
                       )}
 
@@ -1886,7 +1976,7 @@ function NextEPButton({ queue }: { queue?: Plex.Metadata[] }) {
                 height: "auto",
                 aspectRatio: "32/8",
                 overflow: "hidden",
-                background: "#101010",
+                backgroundColor: "#121216",
 
                 display: "flex",
                 flexDirection: "row",
@@ -1926,7 +2016,7 @@ function NextEPButton({ queue }: { queue?: Plex.Metadata[] }) {
                     fontSize: "0.7vw",
                     fontWeight: "700",
                     letterSpacing: "0.15em",
-                    color: "#e6a104",
+                    color: (theme) => theme.palette.primary.main,
                     textTransform: "uppercase",
                   }}
                 >

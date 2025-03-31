@@ -1,12 +1,11 @@
 import { Box, CircularProgress, Grid, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { getSearch } from "../plex";
 import MovieItem from "../components/MovieItem";
 
 export default function Search() {
   const { query } = useParams();
-  const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
 
   const [results, setResults] = useState<Plex.Metadata[] | null>(null);
@@ -80,12 +79,12 @@ export default function Search() {
       <Grid container spacing={2} sx={{ mt: 2, width: "100%" }}>
         {directories && directories.length > 0 && (
           <>
-            <Grid item key={"dir"} xs={12}>
+            <Grid key={"dir"} size={{ xs: 12 }}>
               <Typography variant="h4">Categories</Typography>
             </Grid>
 
             {directories.map((item) => (
-              <Grid item key={item.key} xl={2} lg={3} md={6} sm={12} xs={12}>
+              <Grid key={item.key} size={{ xl: 2, lg: 3, md: 6, sm: 12, xs: 12 }}>
                 <DirectoryItem
                   item={item}
                   onClick={() => {
@@ -99,20 +98,15 @@ export default function Search() {
               </Grid>
             ))}
 
-            <Grid item key={"dir"} xs={12}></Grid>
+            <Grid key={"dir"} size={{ xs: 12 }}></Grid>
           </>
         )}
 
         {results &&
           results.map((item) => (
             <Grid
-              item
               key={item.ratingKey}
-              xl={2}
-              lg={3}
-              md={6}
-              sm={12}
-              xs={12}
+              size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
             >
               <MovieItem item={item} />
             </Grid>

@@ -1,6 +1,5 @@
 import { Box } from "@mui/material";
 import React from "react";
-import CheckBoxOption from "../../components/settings/CheckBoxOption";
 
 function SettingsInfo() {
   return (

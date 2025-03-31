@@ -19,6 +19,7 @@ import LibraryScreen from "./components/LibraryScreen";
 import { useSessionStore } from "./states/SessionState";
 import Settings from "./pages/Settings";
 import { useUserSettings } from "./states/UserSettingsState";
+import MetaScreen from "./components/MetaScreen";
 
 function AppManager() {
   const { loading } = useStartupState();
@@ -52,7 +53,9 @@ function AppTitleManager() {
     console.log(PlexServer);
     if (!PlexServer?.friendlyName) return;
 
-    const capitalizedFriendlyName = PlexServer.friendlyName.charAt(0).toUpperCase() + PlexServer.friendlyName.slice(1);
+    const capitalizedFriendlyName =
+      PlexServer.friendlyName.charAt(0).toUpperCase() +
+      PlexServer.friendlyName.slice(1);
     document.title = `${capitalizedFriendlyName} - Nevu`;
   }, [PlexServer]);
 
@@ -60,7 +63,7 @@ function AppTitleManager() {
     document.title = "Nevu";
   }, []);
 
-  return <></>
+  return <></>;
 }
 
 function App() {
@@ -73,7 +76,7 @@ function App() {
       !location.pathname.startsWith("/login")
     )
       navigate("/login");
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     useWatchListCache.getState().loadWatchListCache();
@@ -94,6 +97,7 @@ function App() {
       <ToastManager />
       <LibraryScreen />
       <AppTitleManager />
+      <MetaScreen />
       <Routes>
         <Route path="*" element={<AppBar />} />
         <Route path="/watch/:itemID" element={<></>} />

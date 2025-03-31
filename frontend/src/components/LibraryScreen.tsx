@@ -133,7 +133,7 @@ function LibraryScreen() {
       >
         <Box
           sx={{
-            width: "70vw",
+            width: "130vh",
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
@@ -195,16 +195,11 @@ function LibraryScreen() {
             </Box>
           </Box>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ width: "100%"}}>
             {library?.Metadata &&
               (skipFilter ? library?.Metadata : sortMetadata(library?.Metadata, sortBy)).map((item, index) => (
                 <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  md={4}
-                  lg={4}
-                  xl={3}
+                  size={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }}
                   key={item.ratingKey}
                 >
                   <Element item={item} key={`${index}`} plexTv={bkey.startsWith("/plextv")} />

@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import {
   Link,
   useLocation,
@@ -26,7 +26,6 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { getAllLibraries, getSearch, getTranscodeImageURL } from "../plex";
-import MetaScreen from "./MetaScreen";
 import { useUserSessionStore } from "../states/UserSession";
 import {
   FavoriteRounded,
@@ -95,12 +94,13 @@ function Appbar() {
         height: 64,
         transition: "all 0.2s ease-in-out",
 
-        bgcolor: scrollAtTop ? "#00000000" : `#000000AA`,
+        bgcolor: theme => scrollAtTop ? "#00000000" : "#12121655",
         backdropFilter: scrollAtTop ? "blur(0px)" : "blur(10px)",
         boxShadow: scrollAtTop ? "none" : "0px 0px 10px 0px #000000AA",
 
         borderBottomLeftRadius: "10px",
         borderBottomRightRadius: "10px",
+        zIndex: 99,
       }}
     >
       <Menu
@@ -220,7 +220,7 @@ S - Skip onscreen markers (intro, credits, etc)
           <ListItemText>Logout</ListItemText>
         </MenuItem>
       </Menu>
-      <MetaScreen />
+
       <Box
         sx={{
           justifyContent: "flex-start",
@@ -558,16 +558,16 @@ function SearchBar() {
                     justifyContent: "flex-start",
                     width: "100%",
                     borderRadius: "5px",
-                    bgcolor: "#202020",
+                    backgroundColor: theme => theme.palette.background.paper,
                     padding: "7px 10px",
 
                     "&:hover": {
-                      backgroundColor: "#303030",
+                      backgroundColor: theme => theme.palette.primary.dark,
                       transition: "all 0.2s ease-in-out",
                     },
 
                     ...(selectedIndex === index && {
-                      backgroundColor: "#303030",
+                      backgroundColor: theme => theme.palette.primary.dark,
                     }),
 
                     transition: "all 0.4s ease-in-out",
@@ -628,16 +628,16 @@ function SearchBar() {
                     justifyContent: "flex-start",
                     width: "100%",
                     borderRadius: "5px",
-                    bgcolor: "#202020",
+                    backgroundColor: theme => theme.palette.background.paper,
                     padding: "7px 10px",
 
                     "&:hover": {
-                      backgroundColor: "#303030",
+                      backgroundColor: theme => theme.palette.primary.dark,
                       transition: "all 0.2s ease-in-out",
                     },
 
                     ...(selectedIndex === index && {
-                      backgroundColor: "#303030",
+                      backgroundColor: theme => theme.palette.primary.dark,
                     }),
 
                     transition: "all 0.4s ease-in-out",
@@ -664,6 +664,7 @@ function SearchBar() {
                 </Box>
               );
             }
+            return null;
           })}
       </Popper>
     </>

@@ -9,7 +9,7 @@ export default function Library() {
     dir: string;
   };
   // get the query strings from react router
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const [results, setResults] = React.useState<Plex.MediaContainer | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -62,13 +62,8 @@ export default function Library() {
             {results &&
               results.Metadata?.map((item) => (
                 <Grid
-                  item
                   key={item.ratingKey}
-                  xl={3}
-                  lg={4}
-                  md={6}
-                  sm={12}
-                  xs={12}
+                  size={{ xs: 12, sm: 12, md: 6, lg: 4, xl: 3 }}
                 >
                   <MovieItem item={item} />
                 </Grid>

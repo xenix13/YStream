@@ -6,7 +6,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import React from "react";
+import React, { JSX } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   getTranscodeImageURL,

@@ -139,6 +139,7 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
             pointerEvents: "none",
 
             overflow: "hidden",
+            zIndex: 0,
           }}
         >
           <ReactPlayer
@@ -146,6 +147,9 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
             controls={false}
             width="100%"
             height="100%"
+            style={{
+              zIndex: -1,
+            }}
             playing={previewVidPlaying}
             volume={MetaScreenPlayerMuted ? 0 : 0.5}
             muted={MetaScreenPlayerMuted}
@@ -248,14 +252,14 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
             <Button
               variant="contained"
               sx={{
-                backgroundColor: "#F4F8FF",
-                color: "#1A1A1A",
+                backgroundColor: (theme) => theme.palette.background.paper,
+                color: theme => theme.palette.text.primary,
                 fontWeight: "bold",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 gap: "10px",
                 "&:hover": {
-                  backgroundColor: "primary.main",
+                  backgroundColor: (theme) => theme.palette.primary.dark,
                 },
                 transition: "all 0.2s ease-in-out",
               }}
@@ -270,13 +274,13 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
             <Button
               variant="contained"
               sx={{
-                backgroundColor: "#5A5A5A",
-                color: "#F4F8FF",
+                backgroundColor: (theme) => theme.palette.background.paper,
+                color: theme => theme.palette.text.primary,
                 fontWeight: "bold",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 "&:hover": {
-                  backgroundColor: "#333333",
+                  backgroundColor: theme => theme.palette.primary.dark,
 
                   "& > *:nth-child(2)": {
                     width: "91px",
@@ -318,12 +322,12 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
           position: "absolute",
           top: "65vh",
 
-          backgroundImage: "linear-gradient(180deg, #00000000, #000000FF)",
+          backgroundImage: "linear-gradient(180deg, #00000000, #000000AA, #000000FF)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundColor: "transparent",
-          zIndex: 0,
+          zIndex: 1,
         }}
       />
     </Box>
