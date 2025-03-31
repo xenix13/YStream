@@ -602,7 +602,6 @@ function Watch() {
             transition: "all 0.6s cubic-bezier(0.23, 1, 0.32, 1)",
             zIndex: 1000,
             pointerEvents: "none",
-
             ...(metadata && metadata?.type === "movie" && {
               justifyContent: "center",
               padding: "0",
@@ -1280,13 +1279,13 @@ function Watch() {
                       px: 3,
                       py: 1,
 
-                      background: theme.palette.text.primary,
-                      color: theme.palette.background.paper,
-                      transition: "all 0.25s",
+                      background: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
+                      transition: "all 0.25s ease",
 
                       "&:hover": {
-                        background: theme.palette.text.primary,
-                        color: theme.palette.background.paper,
+                        background: theme.palette.primary.dark,
+                        color: theme.palette.text.primary,
 
                         boxShadow: "0px 0px 10px 0px #000000AA",
                         px: 4,
@@ -1360,13 +1359,13 @@ function Watch() {
                       px: 3,
                       py: 1,
 
-                      background: theme.palette.text.primary,
-                      color: theme.palette.background.paper,
-                      transition: "all 0.25s",
+                      background: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
+                      transition: "all 0.25s ease",
 
                       "&:hover": {
-                        background: theme.palette.text.primary,
-                        color: theme.palette.background.paper,
+                        background: theme.palette.primary.dark,
+                        color: theme.palette.text.primary,
 
                         boxShadow: "0px 0px 10px 0px #000000AA",
                         px: 4,
@@ -1441,13 +1440,13 @@ function Watch() {
                       px: 3,
                       py: 1,
 
-                      background: theme.palette.text.primary,
-                      color: theme.palette.background.paper,
-                      transition: "all 0.25s",
+                      background: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
+                      transition: "all 0.25s ease",
 
                       "&:hover": {
-                        background: theme.palette.text.primary,
-                        color: theme.palette.background.paper,
+                        background: theme.palette.primary.dark,
+                        color: theme.palette.text.primary,
 
                         boxShadow: "0px 0px 10px 0px #000000AA",
                         px: 4,
