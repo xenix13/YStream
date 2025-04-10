@@ -42,6 +42,15 @@ function Library() {
           right: "48px",
           top: "64px",
           position: "absolute",
+          opacity: 0.7,
+          filter: "brightness(0.7)",
+
+          "&:hover": {
+            opacity: 1,
+            filter: "brightness(1)",
+            transition: "all 0.4s ease",
+          },
+          transition: "all 1s ease",
         }}
       >
         <Button
