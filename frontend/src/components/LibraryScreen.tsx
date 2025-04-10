@@ -61,6 +61,7 @@ function LibraryScreen() {
     setLoading(true);
     setError(null);
     setLibrary(null);
+    setSortBy(localStorage.getItem("sortBy") as LibrarySort);
 
     switch (bkey) {
       case "/plextv/watchlist":

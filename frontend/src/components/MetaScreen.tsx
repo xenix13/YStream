@@ -13,6 +13,7 @@ import {
   Popover,
   Rating,
   Select,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -44,6 +45,7 @@ import { useInView } from "react-intersection-observer";
 import { WatchListButton } from "./MovieItem";
 import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion } from "framer-motion";
+import { useConfirmModal } from "./ConfirmModal";
 
 function MetaScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -618,68 +620,109 @@ function MetaScreen() {
                     }E${data?.OnDeck.Metadata.index}`}
                 </Button>
 
-                <WatchListButton item={data as Plex.Metadata} />
+                <Tooltip placement="top" arrow title="Watchlist">
+                  <WatchListButton item={data as Plex.Metadata} />
+                </Tooltip>
 
                 {data && <RatingButton item={data} />}
 
-                <Button
-                  variant="contained"
-                  sx={{
-                    height: "38px",
-                    backgroundColor: (theme) => theme.palette.background.paper,
-                    color: (theme) => theme.palette.text.primary,
-                    fontWeight: "bold",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    "&:hover": {
-                      backgroundColor: (theme) => theme.palette.primary.main,
-                    },
-                    transition: "all 0.2s ease-in-out",
-                    display: "flex",
-                    gap: 1,
-                  }}
-                  onClick={async () => {
-                    if (!data) return;
-                    switch (data.type) {
-                      case "movie":
-                        data.viewCount = !Boolean(data.viewCount) ? 1 : 0;
-                        setData({ ...data });
-                        await setMediaPlayedStatus(
-                          Boolean(data.viewCount),
-                          data.ratingKey
-                        );
-                        break;
-                      case "show":
-                        const newViewedLeafCount =
-                          data.viewedLeafCount === data.leafCount
-                            ? 0
-                            : data.leafCount;
-                        data.viewedLeafCount = newViewedLeafCount;
-                        setData({ ...data });
-                        await setMediaPlayedStatus(
-                          newViewedLeafCount === data.leafCount,
-                          data.ratingKey
-                        );
-                        break;
-                      default:
-                        break;
-                    }
-                  }}
+                <Tooltip
+                  placement="top"
+                  arrow
+                  title={
+                    `Mark as ` +
+                    (data?.type === "movie"
+                      ? !Boolean(data?.viewCount)
+                        ? "watched"
+                        : "unwatched"
+                      : data?.viewedLeafCount === data?.leafCount
+                      ? "watched"
+                      : "unwatched")
+                  }
                 >
-                  {data?.type === "movie" ? (
-                    !((data?.viewCount ?? 0) > 0) ? (
-                      <CheckCircleOutlineRounded fontSize="small" />
-                    ) : (
-                      <CheckCircleRounded fontSize="small" />
-                    )
-                  ) : data?.type === "show" ? (
-                    data?.viewedLeafCount === data?.leafCount ? (
-                      <CheckCircleRounded fontSize="small" />
-                    ) : (
-                      <CheckCircleOutlineRounded fontSize="small" />
-                    )
-                  ) : null}
-                </Button>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      height: "38px",
+                      backgroundColor: (theme) =>
+                        theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.primary,
+                      fontWeight: "bold",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      "&:hover": {
+                        backgroundColor: (theme) => theme.palette.primary.main,
+                      },
+                      transition: "all 0.2s ease-in-out",
+                      display: "flex",
+                      gap: 1,
+                    }}
+                    onClick={async () => {
+                      if (!data) return;
+                      let state = "unwatched";
+
+                      if (data?.type === "movie" && (data?.viewCount ?? 0) > 0)
+                        state = "watched";
+                      if (
+                        data?.type === "show" &&
+                        data?.viewedLeafCount === data?.leafCount
+                      )
+                        state = "watched";
+
+                      useConfirmModal.getState().setModal({
+                        title: `Mark as ${
+                          state === "unwatched" ? "watched" : "unwatched"
+                        }`,
+                        message: `Are you sure you want to mark ${
+                          data?.title
+                        } as ${
+                          state === "unwatched" ? "watched" : "unwatched"
+                        }?`,
+                        onConfirm: async () => {
+                          switch (data.type) {
+                            case "movie":
+                              data.viewCount = !Boolean(data.viewCount) ? 1 : 0;
+                              setData({ ...data });
+                              await setMediaPlayedStatus(
+                                Boolean(data.viewCount),
+                                data.ratingKey
+                              );
+                              break;
+                            case "show":
+                              const newViewedLeafCount =
+                                data.viewedLeafCount === data.leafCount
+                                  ? 0
+                                  : data.leafCount;
+                              data.viewedLeafCount = newViewedLeafCount;
+                              setData({ ...data });
+                              await setMediaPlayedStatus(
+                                newViewedLeafCount === data.leafCount,
+                                data.ratingKey
+                              );
+                              break;
+                            default:
+                              break;
+                          }
+                        },
+                        onCancel: () => {},
+                      });
+                    }}
+                  >
+                    {data?.type === "movie" ? (
+                      !((data?.viewCount ?? 0) > 0) ? (
+                        <CheckCircleOutlineRounded fontSize="small" />
+                      ) : (
+                        <CheckCircleRounded fontSize="small" />
+                      )
+                    ) : data?.type === "show" ? (
+                      data?.viewedLeafCount === data?.leafCount ? (
+                        <CheckCircleRounded fontSize="small" />
+                      ) : (
+                        <CheckCircleOutlineRounded fontSize="small" />
+                      )
+                    ) : null}
+                  </Button>
+                </Tooltip>
               </Box>
 
               <Box
@@ -933,9 +976,15 @@ function MetaPage1(
       )}
 
       {data?.type === "movie" && data.Related?.Hub?.[0] && (
-        <Grid container spacing={2}>
+        <Grid
+          container
+          spacing={2}
+          sx={{
+            width: "100%",
+          }}
+        >
           {data.Related?.Hub?.[0]?.Metadata?.slice(0, 10).map((movie) => (
-            <Grid size={{ xs: 4 }}>
+            <Grid size={{ lg: 3, md: 4, sm: 6, xs: 12 }}>
               <MovieItem item={movie} />
             </Grid>
           ))}
@@ -1035,7 +1084,7 @@ function MetaPage2(data: Plex.Metadata | undefined) {
             {hub.title}
           </Typography>
 
-          <Grid container spacing={2} sx={{ width: "100%"}}>
+          <Grid container spacing={2} sx={{ width: "100%" }}>
             {hub.Metadata?.map((item) => (
               <Grid size={{ lg: 3, md: 4, sm: 6, xs: 12 }}>
                 <MovieItem item={item} />

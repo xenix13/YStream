@@ -94,7 +94,7 @@ function Appbar() {
         height: 64,
         transition: "all 0.2s ease-in-out",
 
-        bgcolor: theme => scrollAtTop ? "#00000000" : "#12121655",
+        bgcolor: theme => scrollAtTop ? "#00000000" : "#121216AA",
         backdropFilter: scrollAtTop ? "blur(0px)" : "blur(10px)",
         boxShadow: scrollAtTop ? "none" : "0px 0px 10px 0px #000000AA",
 
@@ -230,9 +230,8 @@ S - Skip onscreen markers (intro, credits, etc)
         <img
           src="/logo.png"
           alt=""
-          height="100"
+          width="100"
           style={{
-            aspectRatio: 1,
             objectFit: "contain",
           }}
         />

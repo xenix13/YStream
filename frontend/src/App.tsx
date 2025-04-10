@@ -20,6 +20,7 @@ import { useSessionStore } from "./states/SessionState";
 import Settings from "./pages/Settings";
 import { useUserSettings } from "./states/UserSettingsState";
 import MetaScreen from "./components/MetaScreen";
+import ConfirmModal from "./components/ConfirmModal";
 
 function AppManager() {
   const { loading } = useStartupState();
@@ -98,6 +99,7 @@ function App() {
       <LibraryScreen />
       <AppTitleManager />
       <MetaScreen />
+      <ConfirmModal />
       <Routes>
         <Route path="*" element={<AppBar />} />
         <Route path="/watch/:itemID" element={<></>} />

@@ -229,7 +229,7 @@ declare namespace Plex {
         }
         Extras?: {
             size: number;
-            Metadata: Metadata[];
+            Metadata?: Metadata[];
         }
         Image?: {
             alt: string;

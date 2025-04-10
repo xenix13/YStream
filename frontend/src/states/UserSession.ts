@@ -13,10 +13,11 @@ export const useUserSessionStore = create<UserSessionState>((
     user: null,
     loadUser: async () => {
         const res = await getLoggedInUser();
-        if(!res) return set({ user: null });
-        set({ 
+        console.log("User session store", res);
+        if (!res) return set({ user: null });
+        set({
             user: res
-         });
+        });
     }
 }));
 

@@ -5,6 +5,8 @@ import {
   BookmarkRounded,
   RecommendRounded,
   CheckCircleRounded,
+  VolumeOffRounded,
+  VolumeUpRounded,
 } from "@mui/icons-material";
 import {
   Box,
@@ -17,8 +19,9 @@ import {
   MenuItem,
   Divider,
   ListItemIcon,
+  IconButton,
 } from "@mui/material";
-import React, { JSX } from "react";
+import React, { JSX, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   getTranscodeImageURL,
@@ -28,8 +31,32 @@ import {
   setMediaPlayedStatus,
 } from "../plex";
 import { durationToText } from "./MovieItemSlider";
-import { useWatchListCache, WatchListCacheEmitter } from "../states/WatchListCache";
+import {
+  useWatchListCache,
+  WatchListCacheEmitter,
+} from "../states/WatchListCache";
 import { useBigReader } from "./BigReader";
+import { create } from "zustand";
+import { usePreviewPlayer } from "../states/PreviewPlayerState";
+import ReactPlayer from "react-player";
+import { useConfirmModal } from "./ConfirmModal";
+
+interface MovieItemPreviewPlaybackState {
+  url: string;
+  playing: boolean;
+  setUrl: (url: string) => void;
+  setPlaying: (playing: boolean) => void;
+  setState: (state: { url: string; playing: boolean }) => void;
+}
+
+export const useMovieItemPreviewPlayback =
+  create<MovieItemPreviewPlaybackState>((set) => ({
+    url: "",
+    playing: false,
+    setUrl: (url: string) => set({ url }),
+    setPlaying: (playing: boolean) => set({ playing }),
+    setState: (state: { url: string; playing: boolean }) => set(state),
+  }));
 
 function MovieItem({
   item,
@@ -46,12 +73,21 @@ function MovieItem({
 }): JSX.Element {
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { MetaScreenPlayerMuted } = usePreviewPlayer();
 
   const [playButtonLoading, setPlayButtonLoading] = React.useState(false);
   const [contextMenu, setContextMenu] = React.useState<{
     mouseX: number;
     mouseY: number;
   } | null>(null);
+
+  const [previewPlaybackState, setPreviewPlaybackState] = React.useState({
+    url: "",
+    playing: false,
+  });
+  const hoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const handleClose = () => {
     setContextMenu(null);
@@ -196,37 +232,61 @@ function MovieItem({
         <MenuItem
           onClick={async () => {
             if (!item) return;
-            switch (item.type) {
-              case "movie":
-              case "episode":
-                if (
-                  item.type === "episode" &&
-                  (item?.viewOffset ?? 0) < item.duration
-                ) {
-                  item.viewCount = 1;
-                } else {
-                  item.viewCount = !Boolean(item.viewCount) ? 1 : 0;
-                }
-                await setMediaPlayedStatus(
-                  Boolean(item.viewCount),
-                  item.ratingKey
-                );
-                break;
-              case "show":
-                const newViewedLeafCount =
-                  item.viewedLeafCount === item.leafCount ? 0 : item.leafCount;
-                item.viewedLeafCount = newViewedLeafCount;
-                await setMediaPlayedStatus(
-                  newViewedLeafCount === item.leafCount,
-                  item.ratingKey
-                );
-                break;
-              default:
-                break;
+            let state = "unwatched";
+
+            if (
+              item.type === "movie" ||
+              (item.type === "episode" && (item.viewOffset ?? 0) < item.duration)
+            ) {
+              state = "watched";
             }
 
-            handleClose();
-            refetchData?.();
+            if (item.type === "show") {
+              state =
+                item.viewedLeafCount === item.leafCount ? "unwatched" : "watched";
+            }
+
+            useConfirmModal.getState().setModal({
+              title: `Mark as ${state === "watched" ? "Unwatched" : "Watched"}`,
+              message: `Are you sure you want to mark "${item.title}" as ${state === "watched" ? "Unwatched" : "Watched"}?`,
+              onConfirm: async () => {
+                switch (item.type) {
+                  case "movie":
+                  case "episode":
+                    if (
+                      item.type === "episode" &&
+                      (item?.viewOffset ?? 0) < item.duration
+                    ) {
+                      item.viewCount = 1;
+                    } else {
+                      item.viewCount = !Boolean(item.viewCount) ? 1 : 0;
+                    }
+                    await setMediaPlayedStatus(
+                      Boolean(item.viewCount),
+                      item.ratingKey
+                    );
+                    break;
+                  case "show":
+                    const newViewedLeafCount =
+                      item.viewedLeafCount === item.leafCount ? 0 : item.leafCount;
+                    item.viewedLeafCount = newViewedLeafCount;
+                    await setMediaPlayedStatus(
+                      newViewedLeafCount === item.leafCount,
+                      item.ratingKey
+                    );
+                    break;
+                  default:
+                    break;
+                }
+
+                handleClose();
+                refetchData?.();
+              },
+              onCancel: () => {
+                handleClose();
+              }
+            })
+
           }}
         >
           <ListItemIcon>
@@ -336,9 +396,38 @@ function MovieItem({
             setSearchParams({ mid: item.ratingKey.toString() });
           }
         }}
+        onMouseEnter={() => {
+          if (!item.ratingKey) return;
+          if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+
+          hoverTimerRef.current = setTimeout(async () => {
+            const data = await getLibraryMeta(item.ratingKey);
+            if (!data) return;
+
+            const mediaURL =
+              data.Extras?.Metadata?.[0]?.Media?.[0]?.Part[0]?.key;
+            if (!mediaURL) return;
+            setPreviewPlaybackState({
+              url: `${localStorage.getItem(
+                "server"
+              )}${mediaURL}&X-Plex-Token=${localStorage.getItem(
+                "accessToken"
+              )}`,
+              playing: true,
+            });
+          }, 1000);
+        }}
+        onMouseLeave={() => {
+          if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+          setPreviewPlaybackState({
+            url: "",
+            playing: false,
+          });
+          return;
+        }}
       >
         <Box
-          sx={{
+          style={{
             width: "100%",
             aspectRatio: "16/9",
 
@@ -363,12 +452,78 @@ function MovieItem({
             position: "relative",
           }}
         >
+          <Box
+            sx={{
+              position: "absolute",
+              // make it take up the full width of the parent
+              width: "100%",
+              aspectRatio: "16/9",
+              left: 0,
+              top: 0,
+              filter: "brightness(0.5)",
+              opacity: previewPlaybackState.playing ? 1 : 0,
+              transition: "all 2s ease",
+              backgroundColor: previewPlaybackState.playing
+                ? "rgba(18, 18, 22, 0.9)"
+                : "transparent",
+              pointerEvents: "none",
+
+              overflow: "hidden",
+            }}
+          >
+            <ReactPlayer
+              url={previewPlaybackState.url ?? undefined}
+              controls={false}
+              width="100%"
+              height="100%"
+              autoplay={true}
+              playing={previewPlaybackState.playing}
+              volume={MetaScreenPlayerMuted ? 0 : 0.5}
+              muted={MetaScreenPlayerMuted}
+              onEnded={() => {
+                setPreviewPlaybackState({
+                  url: "",
+                  playing: false,
+                });
+              }}
+              pip={false}
+              config={{
+                file: {
+                  attributes: { disablePictureInPicture: true },
+                },
+              }}
+            />
+          </Box>
+
+          <IconButton
+            sx={{
+              backgroundColor: "#00000088",
+              opacity: previewPlaybackState.url ? 1 : 0,
+              transition: "all 1s ease",
+              position: "absolute",
+              bottom: "10px",
+              right: "10px",
+              zIndex: 10,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (!item) return;
+              
+              usePreviewPlayer.setState((state) => ({
+                MetaScreenPlayerMuted: !state.MetaScreenPlayerMuted,
+              }));
+            }}
+          >
+            {MetaScreenPlayerMuted ? <VolumeOffRounded fontSize="small" /> : <VolumeUpRounded fontSize="small" />}
+          </IconButton>
+
           {((item.type === "show" && item.leafCount === item.viewedLeafCount) ||
             (item.type === "movie" &&
-              item?.viewCount &&
+              item?.viewCount !== undefined &&
               item.viewCount > 0)) && (
             <Box
-              sx={{
+              style={{
                 position: "absolute",
                 top: "10px",
                 right: "10px",
@@ -409,7 +564,7 @@ function MovieItem({
           />
         )}
         <Box
-          sx={{
+          style={{
             width: "100%",
             height: "auto",
             display: "flex",
@@ -439,19 +594,21 @@ function MovieItem({
           </Typography>
 
           <Typography
-            sx={{
+            style={{
               fontSize: "1.2rem",
               fontWeight: "600",
               color: "#FFFFFF",
-              "@media (max-width: 2000px)": {
-                fontSize: "1.1rem",
-              },
               textOverflow: "ellipsis",
               overflow: "hidden",
               whiteSpace: "nowrap",
               maxLines: 1,
               maxInlineSize: "100%",
-              mt: ["episode"].includes(item.type) ? "2px" : "0px",
+              marginTop: ["episode"].includes(item.type) ? "2px" : "0px",
+            }}
+            sx={{
+              "@media (max-width: 2000px)": {
+                fontSize: "1.1rem",
+              },
             }}
           >
             {item.title}
@@ -661,14 +818,14 @@ export function WatchListButton({ item }: { item: Plex.Metadata }) {
         width: "48px",
         height: "38px",
         backgroundColor: (theme) => theme.palette.background.paper,
-        color: theme => theme.palette.text.primary,
+        color: (theme) => theme.palette.text.primary,
         borderRadius: "6px",
         "&:hover": {
           backgroundColor: (theme) => theme.palette.primary.dark,
         },
         transition: "all 0.4s ease-in-out",
         boxShadow: "none",
-        
+
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

@@ -4,12 +4,13 @@ import React, { SetStateAction, useEffect } from "react";
 export type LibrarySort =
   | "title:asc"
   | "title:desc"
-  | "added:asc"
-  | "added:desc"
+  | "addedAt:asc"
+  | "addedAt:desc"
   | "year:asc"
   | "year:desc"
   | "updated:asc"
-  | "updated:desc";
+  | "updated:desc"
+  | "random:desc";
 
 function LibrarySortDropDown({
   sortHook,
@@ -18,23 +19,23 @@ function LibrarySortDropDown({
 }) {
   const [option, setOption] = sortHook;
 
-  useEffect(() => {
-    localStorage.setItem("sortBy", option);
-  }, [option]);
-
   return (
     <Select
       value={option}
-      onChange={(e) => setOption(e.target.value as LibrarySort)}
+      onChange={(e) => {
+        setOption(e.target.value as LibrarySort);
+        localStorage.setItem("sortBy", e.target.value);
+      }}
     >
       <MenuItem value={"title:asc"}>Title (A-Z)</MenuItem>
       <MenuItem value={"title:desc"}>Title (Z-A)</MenuItem>
-      <MenuItem value={"added:asc"}>Date Added (Oldest)</MenuItem>
-      <MenuItem value={"added:desc"}>Date Added (Newest)</MenuItem>
+      <MenuItem value={"addedAt:asc"}>Date Added (Oldest)</MenuItem>
+      <MenuItem value={"addedAt:desc"}>Date Added (Newest)</MenuItem>
       <MenuItem value={"year:asc"}>Year (Oldest)</MenuItem>
       <MenuItem value={"year:desc"}>Year (Newest)</MenuItem>
       <MenuItem value={"updated:asc"}>Date Updated (Oldest)</MenuItem>
       <MenuItem value={"updated:desc"}>Date Updated (Newest)</MenuItem>
+      <MenuItem value={"random:desc"}>Random</MenuItem>
     </Select>
   );
 }
@@ -45,11 +46,11 @@ export function sortMetadata(items: Plex.Metadata[], sort: LibrarySort) {
       return items.sort((a, b) => a.title.localeCompare(b.title));
     case "title:desc":
       return items.sort((a, b) => b.title.localeCompare(a.title));
-    case "added:asc":
+    case "addedAt:asc":
       return items.sort((a, b) =>
         a.addedAt.toString().localeCompare(b.addedAt.toString())
       );
-    case "added:desc":
+    case "addedAt:desc":
       return items.sort((a, b) =>
         b.addedAt.toString().localeCompare(a.addedAt.toString())
       );
@@ -65,6 +66,10 @@ export function sortMetadata(items: Plex.Metadata[], sort: LibrarySort) {
       return items.sort((a, b) =>
         b.updatedAt.toString().localeCompare(a.updatedAt.toString())
       );
+    case "random:desc":
+      return items.sort(() => Math.random() - 0.5);
+    default:
+      return items;
   }
 }
 

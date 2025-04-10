@@ -2,6 +2,7 @@ import { Avatar, Box, CircularProgress, Grid, Typography } from "@mui/material";
 import React, { useEffect } from "react";
 import {
   getAllLibraries,
+  getLibraryDir,
   getLibraryMedia,
   getLibraryMeta,
   getLibrarySecondary,
@@ -269,15 +270,15 @@ async function getRecommendations(libraries: Plex.Directory[]) {
 async function getRandomItem(libraries: Plex.Directory[]) {
   try {
     const library = libraries[Math.floor(Math.random() * libraries.length)];
-    const dirs = await getLibrarySecondary(library.key, "genre");
 
-    const items = await getLibraryMedia(
-      `/sections/${library.key}/all?genre=${
-        dirs[Math.floor(Math.random() * dirs.length)].key
-      }`
-    );
+    const items = await getLibraryDir(
+      `/library/sections/${library.key}/all`, {
+        sort: "random:desc",
+        limit: 1
+      }
+    )
 
-    return items[Math.floor(Math.random() * items.length)];
+    return items.Metadata?.[0] || null;
   } catch (error) {
     console.log("Error fetching random item", error);
     return null;
