@@ -10,9 +10,11 @@ import {
   IconButton,
   LinearProgress,
   MenuItem,
+  Paper,
   Popover,
   Rating,
   Select,
+  Skeleton,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -40,12 +42,13 @@ import ReactPlayer from "react-player";
 import { usePreviewPlayer } from "../states/PreviewPlayerState";
 import MovieItem from "./MovieItem";
 import { useBigReader } from "./BigReader";
-import { useWatchListCache } from "../states/WatchListCache";
 import { useInView } from "react-intersection-observer";
 import { WatchListButton } from "./MovieItem";
 import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion } from "framer-motion";
 import { useConfirmModal } from "./ConfirmModal";
+import { PlexCommunity } from "../plex/plexCommunity";
+import moment from "moment";
 
 function MetaScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,8 +69,6 @@ function MetaScreen() {
 
   const [previewVidURL, setPreviewVidURL] = useState<string | null>(null);
   const [previewVidPlaying, setPreviewVidPlaying] = useState<boolean>(false);
-
-  const WatchList = useWatchListCache();
 
   const mid = searchParams.get("mid");
 
@@ -233,7 +234,7 @@ function MetaScreen() {
           justifyContent: "flex-start",
           backgroundColor: "#121216",
           mt: 4,
-          pb: "20vh",
+          pb: "40vh",
 
           borderTopLeftRadius: "10px",
           borderTopRightRadius: "10px",
@@ -910,6 +911,14 @@ function MetaScreen() {
               text="Info"
             />
 
+            <TabButton
+              onClick={() => {
+                setPage(3);
+              }}
+              selected={page === 3}
+              text="Reviews"
+            />
+
             {data?.type === "show" &&
               data?.Children &&
               data?.Children.size > 1 && (
@@ -942,6 +951,7 @@ function MetaScreen() {
             {page === 0 && MetaPage1(data, loading, episodes, navigate)}
             {page === 1 && MetaPage2(data)}
             {page === 2 && MetaPage3(data)}
+            {page === 3 && <MetaPageReviews data={data} />}
           </AnimatePresence>
         </Box>
       </Box>
@@ -1142,6 +1152,263 @@ function MetaPage3(data: Plex.Metadata | undefined) {
           ))}
         </Grid>
       </Box>
+    </Box>
+  );
+}
+
+function MetaPageReviews({ data }: { data: Plex.Metadata | undefined }) {
+  const [reviews, setReviews] = useState<PlexCommunity.ReviewsData | null>(
+    null
+  );
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!data) return;
+    setLoading(true);
+    const metaID = data.guid.split("/").pop();
+    if (!metaID) return;
+
+    PlexCommunity.getUserReviews(metaID)
+      .then((res) => {
+        if (!res) return;
+        res.recentReviews.nodes =
+          res?.recentReviews.nodes.filter(
+            (review) =>
+              res?.topReviews?.nodes.find(
+                (topReview) => topReview.id === review.id
+              ) === undefined
+          ) ?? [];
+        setReviews(res);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [data]);
+
+  const renderReviewsSection = (
+    title: string,
+    reviewNodes: any[] | undefined,
+    isEmpty: boolean
+  ) => {
+    if(isEmpty) return null;
+    return (
+      <Box sx={{ width: "100%", mb: 5 }}>
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          color="text.primary"
+          sx={{ mb: 2 }}
+        >
+          {title}
+        </Typography>
+
+        {reviewNodes && reviewNodes.length > 0 ? (
+          <Grid container spacing={3} sx={{ width: "100%" }}>
+            {reviewNodes?.map((review) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={review.id}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    bgcolor: (theme) =>
+                      alpha(theme.palette.background.paper, 0.4),
+                    borderRadius: 2,
+                    height: "100%",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: (theme) =>
+                        alpha(theme.palette.background.paper, 0.6),
+                      transform: "translateY(-4px)",
+                      boxShadow: (theme) =>
+                        `0 8px 16px -2px ${alpha(
+                          theme.palette.common.black,
+                          0.15
+                        )}`,
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      mb: 2,
+                      position: "relative",
+                    }}
+                  >
+                    <Avatar
+                      src={review.userV2?.avatar}
+                      sx={{ width: 42, height: 42, boxShadow: 1 }}
+                    >
+                      {review.userV2?.username?.charAt(0) || "U"}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography fontWeight="medium" noWrap>
+                        {review.userV2?.username || "Anonymous User"}
+                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Rating
+                          value={review.reviewRating / 2}
+                          precision={0.5}
+                          size="small"
+                          readOnly
+                          sx={{ color: (theme) => theme.palette.primary.main }}
+                        />
+                        <Typography
+                          variant="caption"
+                          sx={{ ml: 1, color: "text.secondary" }}
+                        >
+                          {moment(new Date(review.date)).fromNow()}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Typography
+                    sx={{
+                      fontSize: "0.95rem",
+                      color: "text.secondary",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: "vertical",
+                      lineHeight: 1.6,
+
+                      ...(review.hasSpoilers && {
+                        filter: "blur(10px)",
+                        transition: "filter 0.2s ease",
+                        "&:hover": {
+                          filter: "blur(0)",
+                          transition: "filter 3s ease",
+                        },
+                      }),
+                    }}
+                  >
+                    {review.message || "No review text provided."}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 4,
+              width: "100%",
+              bgcolor: (theme) => alpha(theme.palette.background.paper, 0.2),
+              borderRadius: 2,
+            }}
+          >
+            <Typography color="text.secondary" variant="body2">
+              No reviews available in this category
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  const totalReviews =
+    (reviews?.topReviews?.nodes.length ?? 0) +
+    (reviews?.friendReviews?.nodes.length ?? 0) +
+    (reviews?.recentReviews?.nodes.length ?? 0);
+
+  return (
+    <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      sx={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        justifyContent: "flex-start",
+        gap: 4,
+        userSelect: "none",
+      }}
+    >
+      {(totalReviews === 0 && !loading) && <Typography>No one has reviewed this title yet.</Typography>}
+
+      {loading ? (
+        <Grid container spacing={3} sx={{ width: "100%" }}>
+          {[1, 2, 3].map((item) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item}>
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: (theme) =>
+                    alpha(theme.palette.background.paper, 0.4),
+                  borderRadius: 2,
+                  height: "100%",
+                }}
+              >
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                >
+                  <Skeleton variant="circular" width={40} height={40} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="70%" height={24} />
+                    <Skeleton variant="text" width="40%" height={20} />
+                  </Box>
+                </Box>
+                <Skeleton variant="text" />
+                <Skeleton variant="text" />
+                <Skeleton variant="text" width="80%" />
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      ) : !reviews ? (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            py: 6,
+            width: "100%",
+            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.2),
+            borderRadius: 2,
+          }}
+        >
+          <StarOutlineRounded
+            sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+          />
+          <Typography color="text.secondary" variant="body1">
+            No reviews available for this title yet
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ width: "100%" }}>
+          {renderReviewsSection(
+            "Recent Reviews",
+            reviews.recentReviews?.nodes,
+            !reviews.recentReviews?.nodes.length
+          )}
+
+          {renderReviewsSection(
+            "Top Reviews",
+            reviews.topReviews?.nodes,
+            !reviews.topReviews?.nodes.length
+          )}
+
+          {renderReviewsSection(
+            "Friend Reviews",
+            reviews.friendReviews?.nodes,
+            !reviews.friendReviews?.nodes.length
+          )}
+        </Box>
+      )}
     </Box>
   );
 }

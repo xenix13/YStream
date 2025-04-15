@@ -20,7 +20,7 @@ function SettingsPlayback() {
         }}
       />
 
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
         <CheckBoxOption
           title="Disable watchscreen darkening"
           subtitle="Disables the darkening effect when interacting with the watchscreen."
@@ -31,6 +31,18 @@ function SettingsPlayback() {
               settings["DISABLE_WATCHSCREEN_DARKENING"] === "true"
                 ? "false"
                 : "true"
+            );
+          }}
+        />
+
+        <CheckBoxOption
+          title="Auto match tracks"
+          subtitle="Automatically select subtitles and audio tracks based on your previous choices. (Always have the same language selected on each episode of a show)"
+          checked={settings.AUTO_MATCH_TRACKS === "true"}
+          onChange={() => {
+            setSetting(
+              "AUTO_MATCH_TRACKS",
+              settings["AUTO_MATCH_TRACKS"] === "true" ? "false" : "true"
             );
           }}
         />

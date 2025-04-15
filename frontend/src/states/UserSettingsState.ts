@@ -2,7 +2,10 @@ import axios from 'axios';
 import { create } from 'zustand';
 import { getBackendURL } from '../backendURL';
 
-type UserSettingsOptions = "DISABLE_WATCHSCREEN_DARKENING";
+type UserSettingsOptions = 
+"DISABLE_WATCHSCREEN_DARKENING" |
+"AUTO_MATCH_TRACKS" |
+string;
 
 export interface UserSettingsState {
     loaded: boolean;
@@ -17,9 +20,10 @@ export const useUserSettings = create<UserSettingsState>((set) => ({
     loaded: false,
     settings: {
         DISABLE_WATCHSCREEN_DARKENING: "false",
+        AUTO_MATCH_TRACKS: "true",
     },
-    setSetting: (key, value) => {
-        axios.post(`${getBackendURL()}/user/options`, {
+    setSetting: async (key, value) => {
+        await axios.post(`${getBackendURL()}/user/options`, {
             key,
             value,
         }, {

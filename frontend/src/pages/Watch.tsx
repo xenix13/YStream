@@ -330,6 +330,97 @@ function Watch() {
 
       if (!itemID) return;
 
+      const metadata = await getLibraryMeta(itemID);
+
+      const autoMatchTracks = useUserSettings.getState().settings["AUTO_MATCH_TRACKS"] === "true";
+
+      const audioTrackPref =
+        useUserSettings.getState().settings[
+          `MEDIA_PREF_AUDIO-${metadata.grandparentRatingKey}`
+        ];
+      const subtitleTrackPref =
+        useUserSettings.getState().settings[
+          `MEDIA_PREF_SUBTITLE-${metadata.grandparentRatingKey}`
+        ];
+
+      // Match audio track and subtitle track with the preferences
+      if (audioTrackPref && autoMatchTracks) {
+        const audioTrackPrefParsed: {
+          index: number;
+          title: string;
+        } = JSON.parse(audioTrackPref);
+
+        console.log(
+          `Preferred Audio Track - Index: ${audioTrackPrefParsed.index}, Title: ${audioTrackPrefParsed.title}`
+        );
+
+        const audioTrack = metadata.Media?.[0].Part[0].Stream.sort((a, b) => {
+          return (
+            Math.abs(a.index - audioTrackPrefParsed.index) -
+            Math.abs(b.index - audioTrackPrefParsed.index)
+          );
+        }).find((stream) => {
+          return (
+            stream.streamType === 2 &&
+            stream.extendedDisplayTitle === audioTrackPrefParsed.title
+          );
+        });
+
+        if (audioTrack) {
+          console.log(
+            `Selected Audio Track - Index: ${audioTrack.index}, Title: ${audioTrack.extendedDisplayTitle}`
+          );
+          await putAudioStream(
+            metadata.Media?.[0].Part[0].id ?? 0,
+            audioTrack.id
+          );
+        }
+      }
+
+      if (subtitleTrackPref && autoMatchTracks) {
+        const subtitleTrackPrefParsed: {
+          index: number;
+          title: string;
+        } = JSON.parse(subtitleTrackPref);
+
+        console.log(
+          `Preferred Subtitle Track - Index: ${subtitleTrackPrefParsed.index}, Title: ${subtitleTrackPrefParsed.title}`
+        );
+
+        if(subtitleTrackPrefParsed.index === -1) {
+          await putSubtitleStream(
+            metadata.Media?.[0].Part[0].id ?? 0,
+            0
+          );
+        } else {
+          const subtitleTrack = metadata.Media?.[0].Part[0].Stream.sort(
+            (a, b) => {
+              return (
+                Math.abs(a.index - subtitleTrackPrefParsed.index) -
+                Math.abs(b.index - subtitleTrackPrefParsed.index)
+              );
+            }
+          ).find((stream) => {
+            return (
+              stream.streamType === 3 &&
+              stream.extendedDisplayTitle === subtitleTrackPrefParsed.title
+            );
+          });
+  
+          if (subtitleTrack) {
+            console.log(
+              `Selected Subtitle Track - Index: ${subtitleTrack.index}, Title: ${subtitleTrack.extendedDisplayTitle}`
+            );
+            await putSubtitleStream(
+              metadata.Media?.[0].Part[0].id ?? 0,
+              subtitleTrack.id
+            );
+          }
+        }
+      }
+
+      console.log(`Setting URL: ${getUrl}`);
+
       await loadMetadata(itemID);
       setURL(getUrl);
       setShowError(false);
@@ -602,10 +693,11 @@ function Watch() {
             transition: "all 0.6s cubic-bezier(0.23, 1, 0.32, 1)",
             zIndex: 1000,
             pointerEvents: "none",
-            ...(metadata && metadata?.type === "movie" && {
-              justifyContent: "center",
-              padding: "0",
-            })
+            ...(metadata &&
+              metadata?.type === "movie" && {
+                justifyContent: "center",
+                padding: "0",
+              }),
           }}
         >
           <img
@@ -628,7 +720,7 @@ function Watch() {
               }vw) perspective(1000px) rotateY(${showInfo ? 0 : -30}deg)`,
               transition: "transform 0.7s cubic-bezier(0.23, 1, 0.32, 1)",
               transitionDelay: "0.2s",
-              border: "2px solid rgba(255,255,255,0.1)"
+              border: "2px solid rgba(255,255,255,0.1)",
             }}
           />
           <Box
@@ -683,7 +775,8 @@ function Watch() {
                     mb: 0.5,
                   }}
                 >
-                  {metadata?.title} <span style={{ opacity: 0.6 }}>· EP.{metadata?.index}</span>
+                  {metadata?.title}{" "}
+                  <span style={{ opacity: 0.6 }}>· EP.{metadata?.index}</span>
                 </Typography>
 
                 <Box
@@ -766,7 +859,7 @@ function Watch() {
                       background: theme.palette.primary.main,
                       borderRadius: "4px",
                       opacity: 0.8,
-                    }
+                    },
                   }}
                 >
                   {metadata?.summary}
@@ -882,7 +975,7 @@ function Watch() {
                       background: theme.palette.primary.main,
                       borderRadius: "4px",
                       opacity: 0.8,
-                    }
+                    },
                   }}
                 >
                   {metadata?.summary}
@@ -1030,7 +1123,7 @@ function Watch() {
                 })}
 
                 {metadata?.Media[0].Part[0].Stream.filter(
-                  (stream) => stream.streamType === 2
+                  (stream) => stream.streamType === 2 // Audio
                 ).map((stream) => (
                   <Box
                     sx={{
@@ -1053,16 +1146,30 @@ function Watch() {
                     }}
                     onClick={async () => {
                       if (!metadata.Media || !itemID) return;
+                      // await putAudioStream(
+                      //   metadata.Media[0].Part[0].id,
+                      //   stream.id
+                      // );
+                      setTunePage(0);
                       await putAudioStream(
-                        metadata.Media[0].Part[0].id,
+                        metadata.Media?.[0].Part[0].id ?? 0,
                         stream.id
                       );
-                      setTunePage(0);
+                      console.log(player.current?.getInternalPlayer('dash'))
+
                       await loadMetadata(itemID);
                       await getUniversalDecision(itemID, {
                         maxVideoBitrate: quality.bitrate,
                         autoAdjustQuality: quality.auto,
                       });
+
+                      useUserSettings.getState().setSetting(
+                        `MEDIA_PREF_AUDIO-${metadata.grandparentRatingKey}`,
+                        JSON.stringify({
+                          index: stream.index,
+                          title: stream.extendedDisplayTitle,
+                        })
+                      );
 
                       const progress = player.current?.getCurrentTime() ?? 0;
 
@@ -1130,13 +1237,25 @@ function Watch() {
                   }}
                   onClick={async () => {
                     if (!metadata.Media || !itemID) return;
-                    await putSubtitleStream(metadata.Media[0].Part[0].id, 0);
+                    // await putSubtitleStream(metadata.Media[0].Part[0].id, 0);
                     setTunePage(0);
+                    await putSubtitleStream(
+                      metadata.Media?.[0].Part[0].id ?? 0,
+                      0
+                    );
                     await loadMetadata(itemID);
                     await getUniversalDecision(itemID, {
                       maxVideoBitrate: quality.bitrate,
                       autoAdjustQuality: quality.auto,
                     });
+
+                    useUserSettings.getState().setSetting(
+                      `MEDIA_PREF_SUBTITLE-${metadata.grandparentRatingKey}`,
+                      JSON.stringify({
+                        index: -1,
+                        title: "None",
+                      })
+                    );
 
                     const progress = player.current?.getCurrentTime() ?? 0;
 
@@ -1149,7 +1268,7 @@ function Watch() {
                   }}
                 >
                   {metadata?.Media[0].Part[0].Stream.filter(
-                    (stream) => stream.selected && stream.streamType === 3
+                    (stream) => stream.selected && stream.streamType === 3 // Subtitle
                   ).length === 0 && (
                     <CheckRounded
                       sx={{
@@ -1191,16 +1310,29 @@ function Watch() {
                     }}
                     onClick={async () => {
                       if (!metadata.Media || !itemID) return;
+                      // await putSubtitleStream(
+                      //   metadata.Media[0].Part[0].id,
+                      //   stream.id
+                      // );
+                      setTunePage(0);
                       await putSubtitleStream(
-                        metadata.Media[0].Part[0].id,
+                        metadata.Media?.[0].Part[0].id ?? 0,
                         stream.id
                       );
-                      setTunePage(0);
+
                       await loadMetadata(itemID);
                       await getUniversalDecision(itemID, {
                         maxVideoBitrate: quality.bitrate,
                         autoAdjustQuality: quality.auto,
                       });
+
+                      useUserSettings.getState().setSetting(
+                        `MEDIA_PREF_SUBTITLE-${metadata.grandparentRatingKey}`,
+                        JSON.stringify({
+                          index: stream.index,
+                          title: stream.extendedDisplayTitle,
+                        })
+                      );
 
                       const progress = player.current?.getCurrentTime() ?? 0;
 

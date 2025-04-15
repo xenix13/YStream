@@ -55,12 +55,40 @@ function Library() {
       >
         <Button
           variant={page === "recommendations" ? "contained" : "outlined"}
+          sx={{
+            fontWeight: "bold",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            gap: "10px",
+            transition: "all 0.2s ease-in-out",
+
+            backgroundColor: (theme) => page === "recommendations" ? theme.palette.primary.dark : "transparent",
+            color: theme => theme.palette.text.primary,
+            "&:hover": {
+              backgroundColor: (theme) => page === "recommendations" ? theme.palette.primary.dark : "transparent",
+              transition: "all 0.4s ease",
+            },
+          }}
           onClick={() => setPage("recommendations")}
         >
           Recommendations
         </Button>
         <Button
           variant={page === "browse" ? "contained" : "outlined"}
+          sx={{
+            fontWeight: "bold",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            gap: "10px",
+            transition: "all 0.2s ease-in-out",
+
+            backgroundColor: (theme) => page === "browse" ? theme.palette.primary.dark : "transparent",
+            color: theme => theme.palette.text.primary,
+            "&:hover": {
+              backgroundColor: (theme) => page === "browse" ? theme.palette.primary.dark : "transparent",
+              transition: "all 0.4s ease",
+            },
+          }}
           onClick={() => setPage("browse")}
         >
           Browse

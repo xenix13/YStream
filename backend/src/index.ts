@@ -174,6 +174,30 @@ app.get('/user/options', async (req, res) => {
     res.send(options);
 });
 
+app.get('/user/options/:key', async (req, res) => {
+    if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
+
+    const user = await CheckPlexUser(req.headers['x-plex-token'] as string);
+    if(!user) return res.status(401).send('Unauthorized user');
+
+    const { key } = req.params;
+    if(!key) return res.status(400).send('Bad request');
+
+    const option = await prisma.userOption.findFirst({
+        where: {
+            userUid: user.uuid,
+            key,
+        }
+    }).catch((err) => {
+        res.status(500).send('Internal server error');
+        console.log(err);
+        return null;
+    });
+    if(!option) return res.status(404).send('Option not found');
+    res.send(option);
+});
+    
+
 app.post('/user/options', async (req, res) => {
     if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
 
