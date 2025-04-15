@@ -54,6 +54,7 @@ import { useSyncInterfaceState } from "../components/PerPlexedSync";
 import { absoluteDifference } from "../common/NumberExtra";
 import WatchShowChildView from "../components/WatchShowChildView";
 import { useUserSettings } from "../states/UserSettingsState";
+import PlaybackNextEPButton from "../components/PlaybackNextEPButton";
 
 let SessionID = "";
 export { SessionID };
@@ -332,7 +333,8 @@ function Watch() {
 
       const metadata = await getLibraryMeta(itemID);
 
-      const autoMatchTracks = useUserSettings.getState().settings["AUTO_MATCH_TRACKS"] === "true";
+      const autoMatchTracks =
+        useUserSettings.getState().settings["AUTO_MATCH_TRACKS"] === "true";
 
       const audioTrackPref =
         useUserSettings.getState().settings[
@@ -387,11 +389,8 @@ function Watch() {
           `Preferred Subtitle Track - Index: ${subtitleTrackPrefParsed.index}, Title: ${subtitleTrackPrefParsed.title}`
         );
 
-        if(subtitleTrackPrefParsed.index === -1) {
-          await putSubtitleStream(
-            metadata.Media?.[0].Part[0].id ?? 0,
-            0
-          );
+        if (subtitleTrackPrefParsed.index === -1) {
+          await putSubtitleStream(metadata.Media?.[0].Part[0].id ?? 0, 0);
         } else {
           const subtitleTrack = metadata.Media?.[0].Part[0].Stream.sort(
             (a, b) => {
@@ -406,7 +405,7 @@ function Watch() {
               stream.extendedDisplayTitle === subtitleTrackPrefParsed.title
             );
           });
-  
+
           if (subtitleTrack) {
             console.log(
               `Selected Subtitle Track - Index: ${subtitleTrack.index}, Title: ${subtitleTrack.extendedDisplayTitle}`
@@ -1155,7 +1154,6 @@ function Watch() {
                         metadata.Media?.[0].Part[0].id ?? 0,
                         stream.id
                       );
-                      console.log(player.current?.getInternalPlayer('dash'))
 
                       await loadMetadata(itemID);
                       await getUniversalDecision(itemID, {
@@ -1566,76 +1564,14 @@ function Watch() {
                     zIndex: 2,
                   }}
                 >
-                  <Button
-                    sx={{
-                      width: "auto",
-                      px: 3,
-                      py: 1,
-
-                      background: theme.palette.background.paper,
-                      color: theme.palette.text.primary,
-                      transition: "all 0.25s ease",
-
-                      "&:hover": {
-                        background: theme.palette.primary.dark,
-                        color: theme.palette.text.primary,
-
-                        boxShadow: "0px 0px 10px 0px #000000AA",
-                        px: 4,
-                      },
-                    }}
-                    variant="contained"
-                    onClick={async () => {
-                      if (!player.current || !metadata?.Marker) return;
-
-                      if (metadata.type === "movie")
-                        return navigate(
-                          `/browse/${metadata.librarySectionID}?${queryBuilder({
-                            mid: metadata.ratingKey,
-                          })}`
-                        );
-
-                      console.log(playQueue);
-
-                      if (!playQueue) return;
-                      const next = playQueue[1];
-                      if (!next)
-                        return navigate(
-                          `/browse/${metadata.librarySectionID}?${queryBuilder({
-                            mid: metadata.grandparentRatingKey,
-                            pid: metadata.parentRatingKey,
-                            iid: metadata.ratingKey,
-                          })}`
-                        );
-
-                      navigate(`/watch/${next.ratingKey}`);
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all 0.25s",
-                        gap: 1,
-                      }}
-                    >
-                      <SkipNext />{" "}
-                      <Typography
-                        sx={{
-                          fontSize: 14,
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {metadata.type === "movie"
-                          ? "Skip Credits"
-                          : playQueue && playQueue[1]
-                          ? "Next Episode"
-                          : "Return to Show"}
-                      </Typography>
-                    </Box>
-                  </Button>
+                  <PlaybackNextEPButton
+                    player={player}
+                    playbackBarRef={playbackBarRef}
+                    metadata={metadata}
+                    playQueue={playQueue}
+                    navigate={navigate}
+                    playing={playing}
+                  />
                 </Box>
               </Fade>
 
@@ -1946,6 +1882,7 @@ function Watch() {
                 ref={player}
                 playing={playing}
                 volume={volume / 100}
+                progressInterval={500}
                 onClick={(e: MouseEvent) => {
                   e.preventDefault();
 
@@ -2025,7 +1962,7 @@ function Watch() {
                 config={{
                   file: {
                     forceDisableHls: true,
-                    dashVersion: "4.7.0",
+                    dashVersion: "4.7.4",
                     attributes: {
                       controlsList: "nodownload",
                       disablePictureInPicture: true,

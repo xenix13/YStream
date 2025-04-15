@@ -46,6 +46,18 @@ function SettingsPlayback() {
             );
           }}
         />
+
+        <CheckBoxOption
+          title="Auto play next episode"
+          subtitle="Automatically play the next episode when the current one ends."
+          checked={settings.AUTO_NEXT_EP === "true"}
+          onChange={() => {
+            setSetting(
+              "AUTO_NEXT_EP",
+              settings["AUTO_NEXT_EP"] === "true" ? "false" : "true"
+            );
+          }}
+        />
       </Box>
     </>
   );

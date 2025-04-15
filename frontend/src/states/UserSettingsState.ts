@@ -5,6 +5,7 @@ import { getBackendURL } from '../backendURL';
 type UserSettingsOptions = 
 "DISABLE_WATCHSCREEN_DARKENING" |
 "AUTO_MATCH_TRACKS" |
+"AUTO_NEXT_EP" |
 string;
 
 export interface UserSettingsState {
@@ -21,6 +22,7 @@ export const useUserSettings = create<UserSettingsState>((set) => ({
     settings: {
         DISABLE_WATCHSCREEN_DARKENING: "false",
         AUTO_MATCH_TRACKS: "true",
+        AUTO_NEXT_EP: "true",
     },
     setSetting: async (key, value) => {
         await axios.post(`${getBackendURL()}/user/options`, {
