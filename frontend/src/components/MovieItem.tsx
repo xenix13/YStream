@@ -460,7 +460,6 @@ function MovieItem({
               aspectRatio: "16/9",
               left: 0,
               top: 0,
-              filter: "brightness(0.5)",
               opacity: previewPlaybackState.playing ? 1 : 0,
               transition: "all 2s ease",
               backgroundColor: previewPlaybackState.playing
