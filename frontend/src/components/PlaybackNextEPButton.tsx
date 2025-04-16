@@ -1,5 +1,5 @@
 import { SkipNext } from "@mui/icons-material";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, useTheme } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { queryBuilder } from "../plex/QuickFunctions";
 import { useUserSettings } from "../states/UserSettingsState";
@@ -19,11 +19,13 @@ function PlaybackNextEPButton({
   playQueue: any;
   navigate: (path: string) => void;
 }) {
+  const theme = useTheme();
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
-  const countdownDuration = metadata.type === "movie" ? 10 : 3;
+  const countdownDuration = metadata.type === "movie" ? 15 : 4;
 
-  const enableAutoNext = useUserSettings.getState().settings.AUTO_NEXT_EP === "true";
+  const enableAutoNext =
+    useUserSettings.getState().settings.AUTO_NEXT_EP === "true";
 
   // Start countdown when a next episode is available
   useEffect(() => {
@@ -43,8 +45,8 @@ function PlaybackNextEPButton({
     }
 
     const timer = setTimeout(() => {
-      setCountdown((prev) => (prev !== null ? prev - 0.1 : null));
-    }, 100);
+      setCountdown((prev) => (prev !== null ? prev - 0.05 : null));
+    }, 50);
 
     return () => clearTimeout(timer);
   }, [countdown, isHovering, playing]);
@@ -87,12 +89,8 @@ function PlaybackNextEPButton({
         py: 1,
         position: "relative",
         overflow: "hidden",
-        background: (theme) =>
-          `linear-gradient(90deg, 
-        ${theme.palette.primary.main} ${progressPercentage}%, 
-        ${theme.palette.background.paper} ${progressPercentage}%)`,
         color: (theme) => theme.palette.text.primary,
-        transition: "all 0.1s linear",
+        transition: "all 0.2s linear",
 
         "&:hover": {
           background: (theme) => theme.palette.primary.dark,
@@ -100,6 +98,11 @@ function PlaybackNextEPButton({
           boxShadow: "0px 0px 10px 0px #000000AA",
           px: 4,
         },
+      }}
+      style={{
+        background: `linear-gradient(90deg, 
+        ${theme.palette.primary.main} ${progressPercentage}%, 
+        ${theme.palette.background.paper} ${progressPercentage}%)`,
       }}
       variant="contained"
       onClick={handleNavigation}
