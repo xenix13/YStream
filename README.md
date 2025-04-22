@@ -16,8 +16,6 @@ Nevu is a complete redesign of Plex's UI using the Plex media server's API. It c
 
 Nevu currently supports Movie and TV Show libraries. You can also play media via the interface.
 
-It is currently not possible to edit media metadata or switch between different Plex servers. The "+" and Star buttons on the info pages for shows and movies are placeholders and are currently not functional.
-
 Mind that this project is still in development and may be unstable.
 
 
