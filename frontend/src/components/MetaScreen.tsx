@@ -101,7 +101,14 @@ function MetaScreen() {
 
     if (!mid) return;
     getLibraryMeta(mid).then((res) => {
-      setSelectedSeason((res.OnDeck?.Metadata?.parentIndex ?? 1) - 1);
+      const seasons = [...res.Children?.Metadata || []];
+      setSelectedSeason((res.OnDeck?.Metadata?.parentIndex ?? (seasons.sort((a, b) => {
+        // if the index is 0 put it at the end
+        if (a.index === 0) return 1;
+        if (b.index === 0) return -1;
+        // sort by index
+        return a.index - b.index;
+      })?.[0]?.index ?? 1)));
       setData(res);
       setLoading(false);
     });
@@ -195,12 +202,17 @@ function MetaScreen() {
   useEffect(() => {
     setEpisodes(null);
     if (!data) return;
+
+    const season = data?.Children?.Metadata?.find((child) => child.index === selectedSeason);
+
+    console.log("Loading data for season", season);
+
     if (
       data?.type === "show" &&
-      data?.Children?.Metadata[selectedSeason]?.ratingKey
+      season?.ratingKey
     ) {
       getLibraryMetaChildren(
-        data?.Children?.Metadata[selectedSeason]?.ratingKey as string
+        season?.ratingKey as string
       ).then((res) => {
         setEpisodes(res);
       });
@@ -230,6 +242,11 @@ function MetaScreen() {
         <CircularProgress />
       </Backdrop>
     );
+
+  
+  const selectedSeasonData = data?.Children?.Metadata.find(
+    (season) => season.index === selectedSeason
+  );
 
   return (
     <Backdrop
@@ -957,7 +974,7 @@ function MetaScreen() {
                 >
                   {data?.type === "show" &&
                     data?.Children?.Metadata?.map((season, index) => (
-                      <MenuItem key={index} value={index}>
+                      <MenuItem key={index} value={season.index}>
                         {season.title}
                       </MenuItem>
                     ))}
