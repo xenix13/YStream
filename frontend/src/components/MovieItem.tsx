@@ -21,7 +21,7 @@ import {
   ListItemIcon,
   IconButton,
 } from "@mui/material";
-import React, { JSX, useEffect } from "react";
+import React, { JSX } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   getTranscodeImageURL,

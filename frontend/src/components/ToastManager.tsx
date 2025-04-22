@@ -2,9 +2,7 @@ import {
   PersonAddRounded,
   PersonRemoveRounded,
   PlayArrowRounded,
-  PlaylistAddRounded,
   PauseRounded,
-  RedoRounded,
   ResetTvRounded,
 } from "@mui/icons-material";
 import { Avatar, Box, Divider, Typography } from "@mui/material";
