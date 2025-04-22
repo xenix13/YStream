@@ -8,7 +8,7 @@ Fixing Plex's old and simple UI.
 *Click image for video*
 [![Nevu1](assets/screenshot1.png)](https://www.youtube.com/watch?v=PuTOw3Wg9oY)
 ![Nevu2](assets/screenshot2.png)
-
+[More Screenshots](https://github.com/Ipmake/Nevu/tree/main/assets)
 
 ## Description
 
@@ -22,14 +22,14 @@ Mind that this project is still in development and may be unstable.
 
 
 ## Features
-- Modern UI
+- Modern, Netflix-like UI
 - Seamless Plex integration
-- Netflix-like UI
 - Play media
 - Browse libraries
 - Search for media
 - Watch Together (Nevu Sync)
 - Get Recommendations
+- Fully integrated Watchlist
 - Simple and easy to use
 - Pro-User features (like special shortcuts etc.)
 
