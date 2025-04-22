@@ -192,18 +192,27 @@ function LibraryScreen() {
                 gap: 2,
               }}
             >
-              {!skipFilter && (<LibrarySortDropDown sortHook={[sortBy, setSortBy]} />)}
+              {!skipFilter && (
+                <LibrarySortDropDown sortHook={[sortBy, setSortBy]} />
+              )}
             </Box>
           </Box>
 
-          <Grid container spacing={2} sx={{ width: "100%"}}>
+          <Grid container spacing={2} sx={{ width: "100%" }}>
             {library?.Metadata &&
-              (skipFilter ? library?.Metadata : sortMetadata(library?.Metadata, sortBy)).map((item, index) => (
+              (skipFilter
+                ? library?.Metadata
+                : sortMetadata(library?.Metadata, sortBy)
+              ).map((item, index) => (
                 <Grid
                   size={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }}
                   key={item.ratingKey}
                 >
-                  <Element item={item} key={`${index}`} plexTv={bkey.startsWith("/plextv")} />
+                  <Element
+                    item={item}
+                    key={`${index}`}
+                    plexTv={bkey.startsWith("/plextv")}
+                  />
                 </Grid>
               ))}
           </Grid>
@@ -214,7 +223,7 @@ function LibraryScreen() {
   return <></>;
 }
 
-function Element({ item, plexTv }: { item: Plex.Metadata, plexTv?: boolean }) {
+function Element({ item, plexTv }: { item: Plex.Metadata; plexTv?: boolean }) {
   const { inView, ref } = useInView();
 
   return (

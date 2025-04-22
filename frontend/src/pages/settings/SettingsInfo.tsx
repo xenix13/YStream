@@ -1,5 +1,9 @@
-import { Box } from "@mui/material";
+import { Box, Button, Paper, Typography } from "@mui/material";
 import React from "react";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import BugReportIcon from "@mui/icons-material/BugReport";
+import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 
 function SettingsInfo() {
   return (
@@ -10,98 +14,122 @@ function SettingsInfo() {
           alignItems: "center",
           justifyContent: "center",
           width: "100%",
+          mb: 4,
         }}
       >
         <img
           src="/logoBig.png"
-          alt="Logo"
-          style={{ width: "50%", height: "auto" }}
+          alt="PerPlexed Logo"
+          style={{
+            width: "50%",
+            height: "auto",
+            filter: "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))",
+          }}
         />
       </Box>
 
-      <Box sx={{ mt: 2, textAlign: "left", color: "#fff" }}>
-        <h2>Thank You for Using Nevu!</h2>
-        <p>
-          This project was developed by{" "}
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          borderRadius: 2,
+          bgcolor: "rgba(18, 18, 22, 0.9)",
+          color: "text.primary",
+        }}
+      >
+        <Typography variant="h4" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
+          Welcome to the Nevu Family!
+        </Typography>
+
+        <Typography variant="body1" paragraph>
+          Hey there! Thanks for joining us on this journey to elevate your Plex
+          experience. Nevu is crafted with passion by{" "}
           <a
             href="https://ipmake.dev"
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: "#1e88e5",
+              color: "#6366F1",
               textDecoration: "none",
               fontWeight: "bold",
             }}
           >
             Ipmake
           </a>{" "}
-          and the amazing contributors from the open-source community.
-        </p>
-        <p>
-          Nevu is designed to enhance your media experience with Plex, providing
-          additional features and improvements.
-        </p>
-        <p>
-          We would like to extend our gratitude to all the contributors and
-          sponsors who have helped make this project a success.
-        </p>
-        <Box sx={{ mt: 2 }}>
-          <a
+          and a community of amazing open-source contributors just like you!
+        </Typography>
+
+        <Typography variant="body1" paragraph>
+          We're on a mission to supercharge your media library with smart
+          features, beautiful interfaces, and thoughtful enhancements that make
+          managing and enjoying your content a breeze.
+        </Typography>
+
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 4, mb: 4 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<GitHubIcon />}
             href="https://github.com/Ipmake/Nevu"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              color: "#1e88e5",
-              textDecoration: "underline",
-              fontWeight: "bold",
-            }}
+            sx={{ fontWeight: "bold" }}
           >
-            Visit our GitHub Repository
-          </a>
-        </Box>
-        <Box sx={{ mt: 2 }}>
-          <a
-            href="https://g.ipmake.dev/perplexed"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "#1e88e5",
-              textDecoration: "underline",
-              fontWeight: "bold",
-            }}
-          >
-            Become a Sponsor
-          </a>
-        </Box>
-        <Box sx={{ mt: 2 }}>
-          <a
+            Visit GitHub Repository
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<BugReportIcon />}
             href="https://github.com/Ipmake/Nevu/issues"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              color: "#1e88e5",
-              textDecoration: "underline",
-              fontWeight: "bold",
-            }}
+            sx={{ fontWeight: "bold" }}
           >
             Report an Issue
-          </a>
+          </Button>
         </Box>
-        <Box
+
+        <Paper
+          elevation={2}
           sx={{
-            mt: 4,
-            p: 1,
-            backgroundColor: "#181818",
-            borderRadius: "10px",
+            mt: 5,
+            p: 3,
+            bgcolor: "rgba(99, 102, 241, 0.08)",
+            borderRadius: 2,
+            border: "1px solid rgba(99, 102, 241, 0.2)",
             textAlign: "center",
           }}
         >
-          <p>
-            If you enjoy using Nevu, please consider donating to support
-            the development of the project.
-          </p>
-        </Box>
-      </Box>
+          <VolunteerActivismIcon
+            sx={{ fontSize: 40, color: "secondary.main", mb: 2 }}
+          />
+
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+            Fuel the Future of Nevu
+          </Typography>
+
+          <Typography variant="body1" paragraph>
+            Your support makes all the difference! Every contribution helps us
+            build new features, improve performance, and keep this project
+            thriving for the entire community.
+          </Typography>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            startIcon={<FavoriteIcon />}
+            href="https://g.ipmake.dev/perplexed"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ fontWeight: "bold", py: 1, px: 3 }}
+          >
+            Become a Supporter
+          </Button>
+        </Paper>
+      </Paper>
     </>
   );
 }

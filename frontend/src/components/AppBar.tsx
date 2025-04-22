@@ -28,6 +28,7 @@ import {
 import { getAllLibraries, getSearch, getTranscodeImageURL } from "../plex";
 import { useUserSessionStore } from "../states/UserSession";
 import {
+  BookmarkRounded,
   FavoriteRounded,
   FullscreenRounded,
   LogoutRounded,
@@ -53,6 +54,7 @@ function Appbar() {
   const [scrollAtTop, setScrollAtTop] = useState(true);
   const location = useLocation();
   const { room } = useSyncSessionState();
+  const [, setSearchParams] = useSearchParams();
 
   const { user } = useUserSessionStore();
 
@@ -92,10 +94,10 @@ function Appbar() {
         px: 6,
         py: 0,
         height: 64,
-        transition: "all 0.2s ease-in-out",
+        transition: "all 0.5s ease-in-out",
 
-        bgcolor: theme => scrollAtTop ? "#00000000" : "#121216AA",
-        backdropFilter: scrollAtTop ? "blur(0px)" : "blur(10px)",
+        bgcolor: (theme) => (scrollAtTop ? "#00000000" : "#121216EE"),
+        backdropFilter: scrollAtTop ? "blur(0px)" : "blur(20px)",
         boxShadow: scrollAtTop ? "none" : "0px 0px 10px 0px #000000AA",
 
         borderBottomLeftRadius: "10px",
@@ -274,6 +276,25 @@ S - Skip onscreen markers (intro, credits, etc)
         }}
       >
         <SearchBar />
+
+        <IconButton
+          onClick={() => {
+            setSearchParams(
+              new URLSearchParams({
+                bkey: `/plextv/watchlist`,
+              })
+            );
+          }}
+          sx={{
+            borderRadius: "10px",
+            padding: 1,
+            "&:hover": {
+              backgroundColor: "#000000AA",
+            },
+          }}
+        >
+          <BookmarkRounded />
+        </IconButton>
 
         {room && (
           <IconButton
@@ -557,16 +578,16 @@ function SearchBar() {
                     justifyContent: "flex-start",
                     width: "100%",
                     borderRadius: "5px",
-                    backgroundColor: theme => theme.palette.background.paper,
+                    backgroundColor: (theme) => theme.palette.background.paper,
                     padding: "7px 10px",
 
                     "&:hover": {
-                      backgroundColor: theme => theme.palette.primary.dark,
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                       transition: "all 0.2s ease-in-out",
                     },
 
                     ...(selectedIndex === index && {
-                      backgroundColor: theme => theme.palette.primary.dark,
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                     }),
 
                     transition: "all 0.4s ease-in-out",
@@ -627,16 +648,16 @@ function SearchBar() {
                     justifyContent: "flex-start",
                     width: "100%",
                     borderRadius: "5px",
-                    backgroundColor: theme => theme.palette.background.paper,
+                    backgroundColor: (theme) => theme.palette.background.paper,
                     padding: "7px 10px",
 
                     "&:hover": {
-                      backgroundColor: theme => theme.palette.primary.dark,
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                       transition: "all 0.2s ease-in-out",
                     },
 
                     ...(selectedIndex === index && {
-                      backgroundColor: theme => theme.palette.primary.dark,
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                     }),
 
                     transition: "all 0.4s ease-in-out",

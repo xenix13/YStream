@@ -57,7 +57,7 @@ function MovieItemSlider({
 
   const fetchData = async () => {
     if (!dir) return;
-    
+
     getLibraryDir(dir, props).then((res) => {
       // cut the array down so its a multiple of itemsPerPage
       if (!res.Metadata) return;
@@ -74,7 +74,7 @@ function MovieItemSlider({
     if (data) return setItems(data);
 
     fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, dir, filter, props, shuffle]);
 
   if (!items) return <></>;
@@ -268,7 +268,9 @@ function MovieItemSlider({
                   itemsPerPage={itemsPerPage}
                   index={i}
                   PlexTvSource={plexTvSource}
-                  refetchData={(dir && dir.endsWith("onDeck")) ? fetchData : undefined}
+                  refetchData={
+                    dir && dir.endsWith("onDeck") ? fetchData : undefined
+                  }
                 />
               );
             } else {

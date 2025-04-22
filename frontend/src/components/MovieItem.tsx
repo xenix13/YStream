@@ -235,20 +235,25 @@ function MovieItem({
             let state = "unwatched";
 
             if (
-              item.type === "movie" ||
-              (item.type === "episode" && (item.viewOffset ?? 0) < item.duration)
+              (item.type === "movie" && Boolean(item.viewCount)) ||
+              (item.type === "episode" &&
+                (item.viewOffset ?? 0) >= item.duration)
             ) {
               state = "watched";
             }
 
             if (item.type === "show") {
               state =
-                item.viewedLeafCount === item.leafCount ? "unwatched" : "watched";
+                item.viewedLeafCount === item.leafCount
+                  ? "watched"
+                  : "unwatched";
             }
 
             useConfirmModal.getState().setModal({
               title: `Mark as ${state === "watched" ? "Unwatched" : "Watched"}`,
-              message: `Are you sure you want to mark "${item.title}" as ${state === "watched" ? "Unwatched" : "Watched"}?`,
+              message: `Are you sure you want to mark "${item.title}" as ${
+                state === "watched" ? "Unwatched" : "Watched"
+              }?`,
               onConfirm: async () => {
                 switch (item.type) {
                   case "movie":
@@ -268,7 +273,9 @@ function MovieItem({
                     break;
                   case "show":
                     const newViewedLeafCount =
-                      item.viewedLeafCount === item.leafCount ? 0 : item.leafCount;
+                      item.viewedLeafCount === item.leafCount
+                        ? 0
+                        : item.leafCount;
                     item.viewedLeafCount = newViewedLeafCount;
                     await setMediaPlayedStatus(
                       newViewedLeafCount === item.leafCount,
@@ -284,9 +291,8 @@ function MovieItem({
               },
               onCancel: () => {
                 handleClose();
-              }
-            })
-
+              },
+            });
           }}
         >
           <ListItemIcon>
@@ -508,13 +514,17 @@ function MovieItem({
               e.stopPropagation();
               e.preventDefault();
               if (!item) return;
-              
+
               usePreviewPlayer.setState((state) => ({
                 MetaScreenPlayerMuted: !state.MetaScreenPlayerMuted,
               }));
             }}
           >
-            {MetaScreenPlayerMuted ? <VolumeOffRounded fontSize="small" /> : <VolumeUpRounded fontSize="small" />}
+            {MetaScreenPlayerMuted ? (
+              <VolumeOffRounded fontSize="small" />
+            ) : (
+              <VolumeUpRounded fontSize="small" />
+            )}
           </IconButton>
 
           {((item.type === "show" && item.leafCount === item.viewedLeafCount) ||

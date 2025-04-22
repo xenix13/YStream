@@ -35,8 +35,8 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
 
     const timeout = setTimeout(() => {
       if (window.scrollY > 100) return;
-      if(searchParams.has("mid")) return;
-      if(document.location.href.includes("mid=")) return;
+      if (searchParams.has("mid")) return;
+      if (document.location.href.includes("mid=")) return;
       setPreviewVidPlaying(true);
     }, 3000);
 
@@ -199,7 +199,7 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
                 fontSize: "24px",
                 fontWeight: "900",
                 letterSpacing: "0.1em",
-                color: theme => theme.palette.primary.main,
+                color: (theme) => theme.palette.primary.main,
                 textTransform: "uppercase",
               }}
             >
@@ -253,7 +253,7 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
               variant="contained"
               sx={{
                 backgroundColor: (theme) => theme.palette.background.paper,
-                color: theme => theme.palette.text.primary,
+                color: (theme) => theme.palette.text.primary,
                 fontWeight: "bold",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
@@ -275,12 +275,12 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
               variant="contained"
               sx={{
                 backgroundColor: (theme) => theme.palette.background.paper,
-                color: theme => theme.palette.text.primary,
+                color: (theme) => theme.palette.text.primary,
                 fontWeight: "bold",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 "&:hover": {
-                  backgroundColor: theme => theme.palette.primary.dark,
+                  backgroundColor: (theme) => theme.palette.primary.dark,
 
                   "& > *:nth-child(2)": {
                     width: "91px",
@@ -298,17 +298,22 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
                 });
               }}
             >
-              <InfoOutlined fontSize="medium" /> <Typography sx={{
-                width: "0px",
-                userSelect: "none",
-                display: "inline",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                transition: "all 0.2s ease-in-out",
+              <InfoOutlined fontSize="medium" />{" "}
+              <Typography
+                sx={{
+                  width: "0px",
+                  userSelect: "none",
+                  display: "inline",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  transition: "all 0.2s ease-in-out",
 
-                fontSize: "0.875rem",
-                lineHeight: "1.75",
-              }}>More Info</Typography>
+                  fontSize: "0.875rem",
+                  lineHeight: "1.75",
+                }}
+              >
+                More Info
+              </Typography>
             </Button>
 
             <WatchListButton item={item} />
@@ -322,7 +327,8 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
           position: "absolute",
           top: "65vh",
 
-          backgroundImage: "linear-gradient(180deg, #00000000, #000000AA, #000000FF)",
+          backgroundImage:
+            "linear-gradient(180deg, #00000000, #000000AA, #000000FF)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",

@@ -3,12 +3,15 @@ import {
   Backdrop,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Collapse,
   Divider,
   Grid,
   IconButton,
   LinearProgress,
+  ListItemIcon,
+  Menu,
   MenuItem,
   Paper,
   Popover,
@@ -19,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import React, { JSX, useEffect, useState } from "react";
+import React, { JSX, useContext, useEffect, useState } from "react";
 import {
   getLibraryMeta,
   getLibraryMetaChildren,
@@ -36,6 +39,9 @@ import {
   CheckCircleOutlineRounded,
   StarRounded,
   StarOutlineRounded,
+  RecommendRounded,
+  CheckBoxOutlineBlankRounded,
+  CheckBoxRounded,
 } from "@mui/icons-material";
 import { durationToText } from "./MovieItemSlider";
 import ReactPlayer from "react-player";
@@ -201,6 +207,20 @@ function MetaScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeason, data]);
+
+  const refetchEpisodes = () => {
+    if (!data) return;
+    if (
+      data?.type === "show" &&
+      data?.Children?.Metadata[selectedSeason]?.ratingKey
+    ) {
+      getLibraryMetaChildren(
+        data?.Children?.Metadata[selectedSeason]?.ratingKey as string
+      ).then((res) => {
+        setEpisodes(res);
+      });
+    }
+  };
 
   if (!searchParams.has("mid")) return <></>;
 
@@ -637,8 +657,8 @@ function MetaScreen() {
                         ? "watched"
                         : "unwatched"
                       : data?.viewedLeafCount === data?.leafCount
-                      ? "watched"
-                      : "unwatched")
+                      ? "unwatched"
+                      : "watched")
                   }
                 >
                   <Button
@@ -948,7 +968,15 @@ function MetaScreen() {
           <Divider sx={{ mb: 2, width: "100%" }} />
 
           <AnimatePresence mode="wait">
-            {page === 0 && MetaPage1(data, loading, episodes, navigate)}
+            {page === 0 && (
+              <MetaPage1
+                data={data}
+                loading={loading}
+                episodes={episodes}
+                refetchEpisodes={refetchEpisodes}
+                navigate={navigate}
+              />
+            )}
             {page === 1 && MetaPage2(data)}
             {page === 2 && MetaPage3(data)}
             {page === 3 && <MetaPageReviews data={data} />}
@@ -961,14 +989,153 @@ function MetaScreen() {
 
 export default MetaScreen;
 
-function MetaPage1(
-  data: Plex.Metadata | undefined,
-  loading: boolean,
-  episodes: Plex.Metadata[] | null | undefined,
-  navigate: (path: string) => void
-) {
+function MetaPage1({
+  data,
+  loading,
+  episodes,
+  refetchEpisodes,
+  navigate,
+}: {
+  data: Plex.Metadata | undefined;
+  loading: boolean;
+  episodes: Plex.Metadata[] | null | undefined;
+  refetchEpisodes: () => void;
+  navigate: (path: string) => void;
+}) {
+  const [selectedEpisodes, setSelectedEpisodes] = useState<Plex.Metadata[]>([]);
+  const [selectMode, setSelectMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!selectMode) setSelectedEpisodes([]);
+  }, [selectMode]);
+
   return (
     <>
+      <Collapse in={selectMode}>
+        {/* Buttons for marking selected episodes as watched or un-watched and a button for select all */}
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={() => {
+              setSelectMode(false);
+            }}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={() => {
+              if (selectedEpisodes.length === episodes?.length) {
+                setSelectedEpisodes([]);
+              } else {
+                setSelectedEpisodes(episodes ?? []);
+              }
+            }}
+          >
+            {selectedEpisodes.length === episodes?.length
+              ? "Unselect All"
+              : "Select All"}
+          </Button>
+
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={async () => {
+              useConfirmModal.getState().setModal({
+                title: `Mark as watched`,
+                message: `Are you sure you want to mark ${selectedEpisodes.length} episodes as watched?`,
+                onConfirm: async () => {
+                  await Promise.all(
+                    selectedEpisodes.map(async (episode) => {
+                      await setMediaPlayedStatus(true, episode.ratingKey);
+                    })
+                  );
+                  refetchEpisodes();
+                  setSelectMode(false);
+                },
+                onCancel: () => {},
+              });
+            }}
+          >
+            Mark as Watched
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={async () => {
+              useConfirmModal.getState().setModal({
+                title: `Mark as unwatched`,
+                message: `Are you sure you want to mark ${selectedEpisodes.length} episodes as unwatched?`,
+                onConfirm: async () => {
+                  await Promise.all(
+                    selectedEpisodes.map(async (episode) => {
+                      await setMediaPlayedStatus(false, episode.ratingKey);
+                    })
+                  );
+                  refetchEpisodes();
+                  setSelectMode(false);
+                },
+                onCancel: () => {},
+              });
+            }}
+          >
+            Mark as Unwatched
+          </Button>
+        </Box>
+      </Collapse>
       {data?.type === "movie" && !data && (
         <Box
           sx={{
@@ -1036,6 +1203,27 @@ function MetaPage1(
           {episodes?.map((episode) => (
             <EpisodeItem
               item={episode}
+              refetchData={refetchEpisodes}
+              selected={selectedEpisodes.some(
+                (selected) => selected.ratingKey === episode.ratingKey
+              )}
+              setSelected={() => {
+                if (
+                  selectedEpisodes.some(
+                    (selected) => selected.ratingKey === episode.ratingKey
+                  )
+                ) {
+                  setSelectedEpisodes(
+                    selectedEpisodes.filter(
+                      (selected) => selected.ratingKey !== episode.ratingKey
+                    )
+                  );
+                } else {
+                  setSelectedEpisodes([...selectedEpisodes, episode]);
+                }
+              }}
+              selectMode={selectMode}
+              setSelectMode={setSelectMode}
               onClick={() => {
                 navigate(
                   `/watch/${episode.ratingKey}${
@@ -1190,7 +1378,7 @@ function MetaPageReviews({ data }: { data: Plex.Metadata | undefined }) {
     reviewNodes: any[] | undefined,
     isEmpty: boolean
   ) => {
-    if(isEmpty) return null;
+    if (isEmpty) return null;
     return (
       <Box sx={{ width: "100%", mb: 5 }}>
         <Typography
@@ -1337,7 +1525,9 @@ function MetaPageReviews({ data }: { data: Plex.Metadata | undefined }) {
         userSelect: "none",
       }}
     >
-      {(totalReviews === 0 && !loading) && <Typography>No one has reviewed this title yet.</Typography>}
+      {totalReviews === 0 && !loading && (
+        <Typography>No one has reviewed this title yet.</Typography>
+      )}
 
       {loading ? (
         <Grid container spacing={3} sx={{ width: "100%" }}>
@@ -1617,193 +1807,345 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
 function EpisodeItem({
   item,
   onClick,
+  refetchData,
+  selected,
+  setSelected,
+  selectMode,
+  setSelectMode,
 }: {
   item: Plex.Metadata;
   onClick?: (event: React.MouseEvent) => void;
+  refetchData: () => void;
+  selected?: boolean;
+  setSelected?: (selected: boolean) => void;
+  selectMode?: boolean;
+  setSelectMode?: (selectMode: boolean) => void;
 }): JSX.Element {
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "flex-start",
-        justifyContent: "flex-start",
-        gap: 2,
-        userSelect: "none",
-        cursor: "pointer",
-        borderRadius: "10px",
-        p: 1.5,
-        mb: 1,
-        transition: "all 0.5s ease",
-        "&:hover": {
-          backgroundColor: (theme) =>
-            alpha(theme.palette.background.paper, 0.5),
-          transition: "all 0.2s ease",
-        },
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+  } | null>(null);
 
-        // on hover get the 2nd child and then the 1st child of that
-        "&:hover > :nth-child(2)": {
-          "& > :nth-child(1)": {
-            opacity: 1,
-            transition: "all 0.2s ease-in",
-          },
-        },
-      }}
-      onClick={(e) => {
-        if (onClick) onClick(e);
-      }}
-    >
-      <Box
-        sx={{
-          width: "5%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          alignSelf: "center",
-        }}
+  const handlePlay = async () => {
+    if (!item) return;
+    navigate(`/watch/${item.ratingKey}`);
+  };
+
+  const handleClose = () => {
+    setContextMenu(null);
+  };
+
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      mouseX: event.clientX - 2,
+      mouseY: event.clientY - 4,
+    });
+  };
+
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleClose}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
       >
         <Typography
           sx={{
-            fontSize: "1.25rem",
+            fontSize: "1rem",
             fontWeight: "bold",
-            color: (theme) => theme.palette.text.primary,
-            textAlign: "center",
+            px: 1,
+            maxWidth: "200px",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
           }}
         >
-          {item.index}
+          EP.{item.index}: {item.title}
         </Typography>
-      </Box>
 
-      <Box
-        sx={{
-          width: "20%",
-          borderRadius: "8px",
-          aspectRatio: "16/9",
-          backgroundImage: `url(${getTranscodeImageURL(
-            `${item.thumb}?X-Plex-Token=${localStorage.getItem("accessToken")}`,
-            380,
-            214
-          )})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundBlendMode: "darken",
-          overflow: "hidden",
-          whiteSpace: "nowrap",
-          transition: "all 0.3s ease",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          justifyContent: "flex-start",
-          position: "relative",
-          boxShadow: (theme) =>
-            `0 4px 6px -1px ${alpha(theme.palette.common.black, 0.2)}`,
-        }}
-      >
-        <PlayArrowRounded
+        <Divider
           sx={{
-            color: "#FFFFFF",
-            fontSize: "400%",
-            m: "auto",
-            opacity: 0,
-            backgroundColor: "#00000088",
-            borderRadius: "50%",
-            transition: "all 0.3s ease-out",
+            my: 1,
           }}
         />
 
-        {(item.viewOffset || (item.viewCount && item.viewCount >= 1)) && (
-          <LinearProgress
-            value={
-              item.viewOffset ? (item.viewOffset / item.duration) * 100 : 100
-            }
-            variant="determinate"
-            sx={{
-              width: "100%",
-              height: "4px",
-              backgroundColor: (theme) =>
-                alpha(theme.palette.common.black, 0.5),
+        <MenuItem
+          onClick={async (e) => {
+            e.stopPropagation();
+            await handlePlay();
+            handleClose();
+          }}
+        >
+          <ListItemIcon>
+            <PlayArrowRounded fontSize="small" />
+          </ListItemIcon>
+          Play
+        </MenuItem>
+        <MenuItem
+          onClick={async () => {
+            if (!item) return;
+            let state = !(!Boolean(item.viewOffset) && Boolean(item.viewCount))
+              ? "unwatched"
+              : "watched";
 
-              position: "absolute",
-              bottom: 0,
-              "& .MuiLinearProgress-bar": {
-                backgroundColor: (theme) => theme.palette.primary.main,
+            useConfirmModal.getState().setModal({
+              title: `Mark as ${state === "watched" ? "Unwatched" : "Watched"}`,
+              message: `Are you sure you want to mark "${item.title}" as ${
+                state === "watched" ? "Unwatched" : "Watched"
+              }?`,
+              onConfirm: async () => {
+                await setMediaPlayedStatus(
+                  !(!Boolean(item.viewOffset) && Boolean(item.viewCount)),
+                  item.ratingKey
+                );
+
+                handleClose();
+                refetchData?.();
               },
-            }}
-          />
-        )}
-      </Box>
+              onCancel: () => {
+                handleClose();
+              },
+            });
+          }}
+        >
+          <ListItemIcon>
+            {!Boolean(item.viewOffset) && Boolean(item.viewCount) ? (
+              <CheckCircleOutlineRounded fontSize="small" />
+            ) : (
+              <CheckCircleRounded fontSize="small" />
+            )}
+          </ListItemIcon>
 
+          {!Boolean(item.viewOffset) && Boolean(item.viewCount)
+            ? "Mark as Unwatched"
+            : "Mark as Watched"}
+        </MenuItem>
+        <MenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            if (setSelectMode) setSelectMode(!selectMode);
+            if (setSelected) setSelected(!selected);
+            handleClose();
+          }}
+        >
+          <ListItemIcon>
+            {selectMode ? (
+              <CheckBoxRounded fontSize="small" />
+            ) : (
+              <CheckBoxOutlineBlankRounded fontSize="small" />
+            )}
+          </ListItemIcon>
+          {selectMode ? "Disable Selection" : "Enable Selection"}
+        </MenuItem>
+      </Menu>
       <Box
         sx={{
-          width: "70%",
+          width: "100%",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           alignItems: "flex-start",
           justifyContent: "flex-start",
-          ml: 0.5,
+          gap: 2,
+          userSelect: "none",
+          cursor: "pointer",
+          borderRadius: "10px",
+          p: 1.5,
+          mb: 1,
+          transition: "all 0.5s ease",
+          "&:hover": {
+            backgroundColor: (theme) =>
+              alpha(theme.palette.background.paper, 0.5),
+            transition: "all 0.2s ease",
+          },
+
+          // on hover get the 2nd child and then the 1st child of that
+          "&:hover > :nth-child(2)": {
+            "& > :nth-child(1)": {
+              opacity: 1,
+              transition: "all 0.2s ease-in",
+            },
+          },
         }}
+        onClick={(e) => {
+          if (onClick) onClick(e);
+        }}
+        onContextMenu={handleContextMenu}
       >
         <Box
           sx={{
-            width: "100%",
+            width: "5%",
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "center",
+            alignSelf: "center",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
           }}
         >
+          {!selectMode && (
+            <Typography
+              sx={{
+                fontSize: "1.25rem",
+                fontWeight: "bold",
+                color: (theme) => theme.palette.text.primary,
+                textAlign: "center",
+              }}
+            >
+              {item.index}
+            </Typography>
+          )}
+
+          {selectMode && (
+            <Checkbox
+              checked={selected}
+              onChange={() => {
+                if (setSelected) setSelected(!selected);
+              }}
+            />
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            width: "20%",
+            borderRadius: "8px",
+            aspectRatio: "16/9",
+            backgroundImage: `url(${getTranscodeImageURL(
+              `${item.thumb}?X-Plex-Token=${localStorage.getItem(
+                "accessToken"
+              )}`,
+              380,
+              214
+            )})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundBlendMode: "darken",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            transition: "all 0.3s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            position: "relative",
+            boxShadow: (theme) =>
+              `0 4px 6px -1px ${alpha(theme.palette.common.black, 0.2)}`,
+          }}
+        >
+          <PlayArrowRounded
+            sx={{
+              color: "#FFFFFF",
+              fontSize: "400%",
+              m: "auto",
+              opacity: 0,
+              backgroundColor: "#00000088",
+              borderRadius: "50%",
+              transition: "all 0.3s ease-out",
+            }}
+          />
+
+          {(item.viewOffset || (item.viewCount && item.viewCount >= 1)) && (
+            <LinearProgress
+              value={
+                item.viewOffset ? (item.viewOffset / item.duration) * 100 : 100
+              }
+              variant="determinate"
+              sx={{
+                width: "100%",
+                height: "4px",
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.common.black, 0.5),
+
+                position: "absolute",
+                bottom: 0,
+                "& .MuiLinearProgress-bar": {
+                  backgroundColor: (theme) => theme.palette.primary.main,
+                },
+              }}
+            />
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            width: "70%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            ml: 0.5,
+          }}
+        >
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                color: (theme) => theme.palette.text.primary,
+                // make it so the text doesnt resize the parent nor overflow max 3 rows
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical",
+                maxWidth: "80%",
+              }}
+            >
+              {item.title}
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 1,
+                color: (theme) => theme.palette.text.secondary,
+              }}
+            >
+              {getMinutes(item.duration)} Min.
+            </Box>
+          </Box>
+
           <Typography
             sx={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              color: (theme) => theme.palette.text.primary,
+              fontSize: "medium",
+              fontWeight: "light",
+              color: (theme) => theme.palette.text.secondary,
+              mt: 0.5,
               // make it so the text doesnt resize the parent nor overflow max 3 rows
               overflow: "hidden",
               textOverflow: "ellipsis",
               display: "-webkit-box",
-              WebkitLineClamp: 1,
+              WebkitLineClamp: 3,
               WebkitBoxOrient: "vertical",
-              maxWidth: "80%",
             }}
+            title={item.summary}
           >
-            {item.title}
+            {item.summary}
           </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: 1,
-              color: (theme) => theme.palette.text.secondary,
-            }}
-          >
-            {getMinutes(item.duration)} Min.
-          </Box>
         </Box>
-
-        <Typography
-          sx={{
-            fontSize: "medium",
-            fontWeight: "light",
-            color: (theme) => theme.palette.text.secondary,
-            mt: 0.5,
-            // make it so the text doesnt resize the parent nor overflow max 3 rows
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: "vertical",
-          }}
-          title={item.summary}
-        >
-          {item.summary}
-        </Typography>
       </Box>
-    </Box>
+    </>
   );
 }
 

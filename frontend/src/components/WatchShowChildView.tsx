@@ -165,7 +165,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                           width: "100%",
                           py: "7px",
                           px: "15px",
-                bgcolor: "#121216",
+                          bgcolor: "#121216",
 
                           display: "flex",
                           flexDirection: "row",
@@ -173,13 +173,13 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                           alignItems: "center",
 
                           "&:hover": {
-                            background: theme => theme.palette.primary.dark,
+                            background: (theme) => theme.palette.primary.dark,
 
                             pr: "5px",
                           },
 
                           ...(selectedSeason === season.index && {
-                            background: theme => theme.palette.primary.dark,
+                            background: (theme) => theme.palette.primary.dark,
 
                             "& svg": {
                               opacity: 0,

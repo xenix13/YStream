@@ -62,8 +62,8 @@ function ConfirmModal() {
   };
 
   return (
-    <Modal 
-      open={open} 
+    <Modal
+      open={open}
       onClose={handleCancel}
       closeAfterTransition
       aria-labelledby="confirm-modal-title"
@@ -96,7 +96,7 @@ function ConfirmModal() {
           >
             {title}
           </Typography>
-          
+
           <Typography
             id="confirm-modal-description"
             variant="body1"
@@ -107,12 +107,12 @@ function ConfirmModal() {
           >
             {message}
           </Typography>
-          
-          <Box 
-            sx={{ 
-              display: "flex", 
+
+          <Box
+            sx={{
+              display: "flex",
               justifyContent: "flex-end",
-              gap: 2
+              gap: 2,
             }}
           >
             <Button
@@ -127,7 +127,7 @@ function ConfirmModal() {
             >
               Cancel
             </Button>
-            
+
             <Button
               variant="contained"
               onClick={handleConfirm}
