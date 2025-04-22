@@ -36,7 +36,7 @@ function PerPlexedSync() {
 
   useEffect(() => {
     setInputRoom("");
-    if(page !== "join") setError(null);
+    if (page !== "join") setError(null);
   }, [page]);
 
   useEffect(() => {
@@ -292,7 +292,9 @@ function PerPlexedSync() {
                 color="primary"
                 onClick={async () => {
                   setPage("load");
-                  const res = await useSyncSessionState.getState().connect(undefined, navigate);
+                  const res = await useSyncSessionState
+                    .getState()
+                    .connect(undefined, navigate);
                   if (res !== true) {
                     setError(res.message);
                     setPage("home");

@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import {
   Link,
   useLocation,
@@ -26,9 +26,9 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { getAllLibraries, getSearch, getTranscodeImageURL } from "../plex";
-import MetaScreen from "./MetaScreen";
 import { useUserSessionStore } from "../states/UserSession";
 import {
+  BookmarkRounded,
   FavoriteRounded,
   FullscreenRounded,
   LogoutRounded,
@@ -54,6 +54,7 @@ function Appbar() {
   const [scrollAtTop, setScrollAtTop] = useState(true);
   const location = useLocation();
   const { room } = useSyncSessionState();
+  const [, setSearchParams] = useSearchParams();
 
   const { user } = useUserSessionStore();
 
@@ -74,6 +75,8 @@ function Appbar() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     getAllLibraries().then((res) => {
       setLibraries(res);
@@ -91,14 +94,15 @@ function Appbar() {
         px: 6,
         py: 0,
         height: 64,
-        transition: "all 0.2s ease-in-out",
+        transition: "all 0.5s ease-in-out",
 
-        bgcolor: scrollAtTop ? "#00000000" : `#000000AA`,
-        backdropFilter: scrollAtTop ? "blur(0px)" : "blur(10px)",
+        bgcolor: (theme) => (scrollAtTop ? "#00000000" : "#121216EE"),
+        backdropFilter: scrollAtTop ? "blur(0px)" : "blur(20px)",
         boxShadow: scrollAtTop ? "none" : "0px 0px 10px 0px #000000AA",
 
         borderBottomLeftRadius: "10px",
         borderBottomRightRadius: "10px",
+        zIndex: 99,
       }}
     >
       <Menu
@@ -196,9 +200,8 @@ S - Skip onscreen markers (intro, credits, etc)
         <MenuItem
           onClick={() => {
             setAnchorEl(null);
-            // navigate("/settings");
+            navigate("/settings/info");
           }}
-          disabled
         >
           <ListItemIcon>
             <SettingsRounded fontSize="small" />
@@ -219,7 +222,7 @@ S - Skip onscreen markers (intro, credits, etc)
           <ListItemText>Logout</ListItemText>
         </MenuItem>
       </Menu>
-      <MetaScreen />
+
       <Box
         sx={{
           justifyContent: "flex-start",
@@ -229,9 +232,8 @@ S - Skip onscreen markers (intro, credits, etc)
         <img
           src="/logo.png"
           alt=""
-          height="100"
+          width="100"
           style={{
-            aspectRatio: 1,
             objectFit: "contain",
           }}
         />
@@ -274,6 +276,25 @@ S - Skip onscreen markers (intro, credits, etc)
         }}
       >
         <SearchBar />
+
+        <IconButton
+          onClick={() => {
+            setSearchParams(
+              new URLSearchParams({
+                bkey: `/plextv/watchlist`,
+              })
+            );
+          }}
+          sx={{
+            borderRadius: "10px",
+            padding: 1,
+            "&:hover": {
+              backgroundColor: "#000000AA",
+            },
+          }}
+        >
+          <BookmarkRounded />
+        </IconButton>
 
         {room && (
           <IconButton
@@ -557,16 +578,16 @@ function SearchBar() {
                     justifyContent: "flex-start",
                     width: "100%",
                     borderRadius: "5px",
-                    bgcolor: "#202020",
+                    backgroundColor: (theme) => theme.palette.background.paper,
                     padding: "7px 10px",
 
                     "&:hover": {
-                      backgroundColor: "#303030",
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                       transition: "all 0.2s ease-in-out",
                     },
 
                     ...(selectedIndex === index && {
-                      backgroundColor: "#303030",
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                     }),
 
                     transition: "all 0.4s ease-in-out",
@@ -627,16 +648,16 @@ function SearchBar() {
                     justifyContent: "flex-start",
                     width: "100%",
                     borderRadius: "5px",
-                    bgcolor: "#202020",
+                    backgroundColor: (theme) => theme.palette.background.paper,
                     padding: "7px 10px",
 
                     "&:hover": {
-                      backgroundColor: "#303030",
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                       transition: "all 0.2s ease-in-out",
                     },
 
                     ...(selectedIndex === index && {
-                      backgroundColor: "#303030",
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                     }),
 
                     transition: "all 0.4s ease-in-out",
@@ -663,6 +684,7 @@ function SearchBar() {
                 </Box>
               );
             }
+            return null;
           })}
       </Popper>
     </>

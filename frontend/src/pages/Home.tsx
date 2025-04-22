@@ -2,6 +2,7 @@ import { Avatar, Box, CircularProgress, Grid, Typography } from "@mui/material";
 import React, { useEffect } from "react";
 import {
   getAllLibraries,
+  getLibraryDir,
   getLibraryMedia,
   getLibraryMeta,
   getLibrarySecondary,
@@ -106,55 +107,94 @@ export default function Home() {
           {libraries
             ?.filter((e) => ["movie", "show"].includes(e.type || ""))
             .map((library) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={library.key}>
+              <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2, xl: 2 }} key={library.key}>
                 <Box
                   sx={{
                     width: "100%",
                     height: "auto",
-                    aspectRatio: "21/9",
+                    aspectRatio: "16/9",
                     display: "flex",
-                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: 2,
-                    p: 2,
-                    transition: "all 0.2s ease-in-out",
-                    background: `
-                    linear-gradient(90deg, #000000AA, #000000AA),
-                    url(${localStorage.getItem("server")}${
-                      library.art
-                    }?X-Plex-Token=${localStorage.getItem("accessToken")})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-
-                    userSelect: "none",
+                    borderRadius: "7px",
+                    position: "relative",
+                    overflow: "hidden",
                     cursor: "pointer",
-                    zIndex: 1000,
-
+                    boxShadow: (theme) => theme.shadows[1],
+                    transition: "all 0.2s ease",
+                    
                     "&:hover": {
-                      transform: "scale(1.05)",
-                      transition: "all 0.1s linear",
+                      transform: "translateY(-4px) scale(1.02)",
+                      boxShadow: (theme) => theme.shadows[3],
                     },
                   }}
                   onClick={() => navigate(`/browse/${library.key}`)}
                 >
-                  <Avatar
-                    variant="rounded"
-                    src={`${localStorage.getItem("server")}${
-                      library.thumb
-                    }?X-Plex-Token=${localStorage.getItem("accessToken")}`}
-                    sx={{ width: 100, height: 100 }}
-                  />
-                  <Typography
+                  {/* Background image */}
+                  <Box
                     sx={{
-                      fontSize: "1.5rem",
-                      fontWeight: "bold",
-                      color: "white",
-                      mt: 1,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundImage: `url(${localStorage.getItem("server")}${
+                        library.art
+                      }?X-Plex-Token=${localStorage.getItem("accessToken")})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      zIndex: -2,
                     }}
-                  >
-                    {library.title}
-                  </Typography>
+                  />
+                  
+                  {/* Theme color overlay */}
+                  <Box
+                    className="overlay"
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: (theme) => `linear-gradient(180deg, 
+                        ${theme.palette.primary.dark}99, 
+                        ${theme.palette.background.default}EE)`,
+                      opacity: 0.85,
+                      zIndex: -1,
+                      transition: "opacity 0.2s ease",
+                    }}
+                  />
+                  
+                  <Box sx={{ 
+                    display: "flex", 
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 1.5,
+                    textAlign: "center",
+                    p: 2
+                  }}>
+                    <Avatar
+                      variant="rounded"
+                      src={`${localStorage.getItem("server")}${
+                        library.thumb
+                      }?X-Plex-Token=${localStorage.getItem("accessToken")}`}
+                      sx={{ 
+                        width: 48, 
+                        height: 48,
+                        boxShadow: (theme) => theme.shadows[2],
+                      }}
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: "common.white",
+                        textShadow: "0px 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    >
+                      {library.title}
+                    </Typography>
+                  </Box>
                 </Box>
               </Grid>
             ))}
@@ -230,15 +270,15 @@ async function getRecommendations(libraries: Plex.Directory[]) {
 async function getRandomItem(libraries: Plex.Directory[]) {
   try {
     const library = libraries[Math.floor(Math.random() * libraries.length)];
-    const dirs = await getLibrarySecondary(library.key, "genre");
 
-    const items = await getLibraryMedia(
-      `/sections/${library.key}/all?genre=${
-        dirs[Math.floor(Math.random() * dirs.length)].key
-      }`
-    );
+    const items = await getLibraryDir(
+      `/library/sections/${library.key}/all`, {
+        sort: "random:desc",
+        limit: 1
+      }
+    )
 
-    return items[Math.floor(Math.random() * items.length)];
+    return items.Metadata?.[0] || null;
   } catch (error) {
     console.log("Error fetching random item", error);
     return null;

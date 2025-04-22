@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import { PlexTv } from "../plex/plextv";
+import { EventEmitter } from "events";
+
+export const WatchListCacheEmitter = new EventEmitter();
 
 interface WatchListCacheState {
     watchListCache: Plex.Metadata[];
@@ -17,11 +20,13 @@ export const useWatchListCache = create<WatchListCacheState>((set) => ({
         if (useWatchListCache.getState().watchListCache.includes(item)) return;
         await PlexTv.addToWatchlist(item.guid.split("/")[3]);
         set((state) => ({ watchListCache: [item, ...state.watchListCache] }))
+        WatchListCacheEmitter.emit("watchListUpdate", item);
     },
     removeItem: async (item) => {
         if (!useWatchListCache.getState().isOnWatchList(item)) return;
         await PlexTv.removeFromWatchlist(item.split("/")[3]);
         set((state) => ({ watchListCache: state.watchListCache.filter((i) => i.guid !== item) }));
+        WatchListCacheEmitter.emit("watchListUpdate", item);
     },
     loadWatchListCache: async () => {
         const watchList = await PlexTv.getWatchlist();

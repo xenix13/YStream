@@ -96,6 +96,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                 width: "auto",
                 height: "auto",
                 userSelect: "none",
+                bgcolor: "#121216",
               }}
             >
               <ClickAwayListener
@@ -126,7 +127,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                       maxHeight: "40vh",
                       overflowY: "auto",
 
-                      backgroundColor: "#202020",
+                      bgcolor: "#121216",
                     }}
                   >
                     <Box
@@ -164,7 +165,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                           width: "100%",
                           py: "7px",
                           px: "15px",
-                          background: "#202020",
+                          bgcolor: "#121216",
 
                           display: "flex",
                           flexDirection: "row",
@@ -172,13 +173,13 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                           alignItems: "center",
 
                           "&:hover": {
-                            background: "#303030",
+                            background: (theme) => theme.palette.primary.dark,
 
                             pr: "5px",
                           },
 
                           ...(selectedSeason === season.index && {
-                            background: "#303030",
+                            background: (theme) => theme.palette.primary.dark,
 
                             "& svg": {
                               opacity: 0,

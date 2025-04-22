@@ -1,4 +1,9 @@
-import { CheckCircle, PlayArrow, InfoOutlined, BookmarkBorder } from "@mui/icons-material";
+import {
+  CheckCircle,
+  PlayArrow,
+  InfoOutlined,
+  BookmarkBorder,
+} from "@mui/icons-material";
 import {
   Box,
   Typography,
@@ -6,7 +11,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import React from "react";
+import React, { JSX } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   getTranscodeImageURL,
@@ -471,33 +476,33 @@ function MovieItemLegacy({
           </Button>
 
           <Button
-              variant="contained"
-              sx={{
-                width: "fit-content",
-                height: "100%",
-                backgroundColor: "#555555",
-                color: "#FFFFFF",
-                fontSize: "12px",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                "&:hover": {
-                  backgroundColor: "#333333",
-                },
-                gap: 1,
-                transition: "all 0.2s ease-in-out",
-  
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-  
-                padding: "0px 20px",
-                minWidth: "20px",
-              }}
-              onClick={() => {}}
-            >
-              <BookmarkBorder fontSize="small" />
-            </Button>
+            variant="contained"
+            sx={{
+              width: "fit-content",
+              height: "100%",
+              backgroundColor: "#555555",
+              color: "#FFFFFF",
+              fontSize: "12px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: "#333333",
+              },
+              gap: 1,
+              transition: "all 0.2s ease-in-out",
+
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+
+              padding: "0px 20px",
+              minWidth: "20px",
+            }}
+            onClick={() => {}}
+          >
+            <BookmarkBorder fontSize="small" />
+          </Button>
         </Box>
       </Box>
       {/* <Box sx={{

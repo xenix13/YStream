@@ -168,6 +168,7 @@ declare namespace Plex {
     interface Metadata {
         ratingKey: string;
         key: string;
+        skipChildren?: boolean; // true if hide seasons
         parentRatingKey?: string;
         grandparentRatingKey?: string;
         guid: string;
@@ -228,7 +229,7 @@ declare namespace Plex {
         }
         Extras?: {
             size: number;
-            Metadata: Metadata[];
+            Metadata?: Metadata[];
         }
         Image?: {
             alt: string;

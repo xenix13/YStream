@@ -35,7 +35,10 @@ function LibraryScreen() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSearchParams(new URLSearchParams());
+      if (e.key === "Escape") {
+        searchParams.delete("bkey");
+        setSearchParams(searchParams);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -47,7 +50,9 @@ function LibraryScreen() {
     if (!(searchParams.has("mid") && searchParams.has("bkey"))) return;
 
     const localbkey = searchParams.get("bkey");
-    if (localbkey) setSearchParams({ bkey: localbkey });
+    searchParams.delete("mid");
+    if (localbkey) searchParams.set("bkey", localbkey);
+    setSearchParams(searchParams);
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -56,6 +61,7 @@ function LibraryScreen() {
     setLoading(true);
     setError(null);
     setLibrary(null);
+    setSortBy(localStorage.getItem("sortBy") as LibrarySort);
 
     switch (bkey) {
       case "/plextv/watchlist":
@@ -102,7 +108,8 @@ function LibraryScreen() {
           zIndex: 1200,
         }}
         onClick={() => {
-          setSearchParams(new URLSearchParams());
+          searchParams.delete("bkey");
+          setSearchParams(searchParams);
         }}
       >
         <CircularProgress />
@@ -121,12 +128,13 @@ function LibraryScreen() {
           zIndex: 1200,
         }}
         onClick={() => {
-          setSearchParams(new URLSearchParams());
+          searchParams.delete("bkey");
+          setSearchParams(searchParams);
         }}
       >
         <Box
           sx={{
-            width: "70vw",
+            width: "130vh",
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
@@ -184,23 +192,27 @@ function LibraryScreen() {
                 gap: 2,
               }}
             >
-              {!skipFilter && (<LibrarySortDropDown sortHook={[sortBy, setSortBy]} />)}
+              {!skipFilter && (
+                <LibrarySortDropDown sortHook={[sortBy, setSortBy]} />
+              )}
             </Box>
           </Box>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ width: "100%" }}>
             {library?.Metadata &&
-              (skipFilter ? library?.Metadata : sortMetadata(library?.Metadata, sortBy)).map((item, index) => (
+              (skipFilter
+                ? library?.Metadata
+                : sortMetadata(library?.Metadata, sortBy)
+              ).map((item, index) => (
                 <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  md={4}
-                  lg={4}
-                  xl={3}
+                  size={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }}
                   key={item.ratingKey}
                 >
-                  <Element item={item} key={`${index}`} plexTv={bkey.startsWith("/plextv")} />
+                  <Element
+                    item={item}
+                    key={`${index}`}
+                    plexTv={bkey.startsWith("/plextv")}
+                  />
                 </Grid>
               ))}
           </Grid>
@@ -211,7 +223,7 @@ function LibraryScreen() {
   return <></>;
 }
 
-function Element({ item, plexTv }: { item: Plex.Metadata, plexTv?: boolean }) {
+function Element({ item, plexTv }: { item: Plex.Metadata; plexTv?: boolean }) {
   const { inView, ref } = useInView();
 
   return (

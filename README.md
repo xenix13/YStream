@@ -8,7 +8,7 @@ Fixing Plex's old and simple UI.
 *Click image for video*
 [![Nevu1](assets/screenshot1.png)](https://www.youtube.com/watch?v=PuTOw3Wg9oY)
 ![Nevu2](assets/screenshot2.png)
-
+[More Screenshots](https://github.com/Ipmake/Nevu/tree/main/assets)
 
 ## Description
 
@@ -22,14 +22,14 @@ Mind that this project is still in development and may be unstable.
 
 
 ## Features
-- Modern UI
+- Modern, Netflix-like UI
 - Seamless Plex integration
-- Netflix-like UI
 - Play media
 - Browse libraries
 - Search for media
 - Watch Together (Nevu Sync)
 - Get Recommendations
+- Fully integrated Watchlist
 - Simple and easy to use
 - Pro-User features (like special shortcuts etc.)
 
@@ -40,18 +40,45 @@ Mind that this project is still in development and may be unstable.
 The easiest way to run Nevu is to use Docker. You can use the following command to run Nevu in a Docker container:
 
 ```bash
-docker run --name nevu -p 3000:3000 -e PLEX_SERVER=http://your-plex-server:32400 ipmake/nevu
+docker volume create nevu_data
+docker run --name nevu -p 3000:3000 -v nevu_data:/data -e PLEX_SERVER=http://your-plex-server:32400 ipmake/nevu
 ```
 
-#### Environment Variables
-| Name                   | Type       | Required | Description                                                                 |
-|------------------------|------------|----------|-----------------------------------------------------------------------------|
-| PLEX_SERVER            | string     | Yes      | The URL of the Plex server that the frontend will connect to                |
-| PROXY_PLEX_SERVER      | string     | No       | The URL of the Plex server to proxy requests to                             |
-| DISABLE_PROXY          | true/false | No       | If set to true, the proxy will be disabled and all requests go directly to the Plex server from the frontend (NOT RECOMMENDED) |
-| DISABLE_TLS_VERIFY     | true/false | No       | If set to true, the proxy will not check any https ssl certificates         |
-| DISABLE_NEVU_SYNC | true/false | No       | If set to true, Nevu sync (watch together) will be disabled            |
-| DISABLE_REQUEST_LOGGING| true/false | No       | If set to true, the server will not log any requests                        |
+### Docker Compose
+
+Alternatively, you can use Docker Compose to run Nevu. Create a `docker-compose.yml` file with the following content:
+
+```yaml
+services:
+    nevu:
+        image: ipmake/nevu
+        container_name: nevu
+        ports:
+            - "3000:3000"
+        volumes:
+            - nevu_data:/data
+        environment:
+            - PLEX_SERVER=http://your-plex-server:32400
+
+volumes:
+    nevu_data:
+```
+
+Then run:
+
+```bash
+docker-compose up -d
+```
+
+### Environment Variables
+| Name                     | Type       | Required | Description                                                                 |
+|--------------------------|------------|----------|-----------------------------------------------------------------------------|
+| `PLEX_SERVER`            | string     | Yes      | The URL of the Plex server that the frontend will connect to                |
+| `PROXY_PLEX_SERVER`      | string     | No       | The URL of the Plex server to proxy requests to                             |
+| `DISABLE_PROXY`          | true/false | No       | If set to true, the proxy will be disabled and all requests go directly to the Plex server from the frontend (NOT RECOMMENDED) |
+| `DISABLE_TLS_VERIFY`     | true/false | No       | If set to true, the proxy will not check any https ssl certificates         |
+| `DISABLE_NEVU_SYNC`      | true/false | No       | If set to true, Nevu sync (watch together) will be disabled                 |
+| `DISABLE_REQUEST_LOGGING`| true/false | No       | If set to true, the server will not log any requests                        |
 
 
 

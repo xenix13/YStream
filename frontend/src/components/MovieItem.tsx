@@ -5,6 +5,8 @@ import {
   BookmarkRounded,
   RecommendRounded,
   CheckCircleRounded,
+  VolumeOffRounded,
+  VolumeUpRounded,
 } from "@mui/icons-material";
 import {
   Box,
@@ -17,8 +19,9 @@ import {
   MenuItem,
   Divider,
   ListItemIcon,
+  IconButton,
 } from "@mui/material";
-import React from "react";
+import React, { JSX } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   getTranscodeImageURL,
@@ -28,8 +31,32 @@ import {
   setMediaPlayedStatus,
 } from "../plex";
 import { durationToText } from "./MovieItemSlider";
-import { useWatchListCache } from "../states/WatchListCache";
+import {
+  useWatchListCache,
+  WatchListCacheEmitter,
+} from "../states/WatchListCache";
 import { useBigReader } from "./BigReader";
+import { create } from "zustand";
+import { usePreviewPlayer } from "../states/PreviewPlayerState";
+import ReactPlayer from "react-player";
+import { useConfirmModal } from "./ConfirmModal";
+
+interface MovieItemPreviewPlaybackState {
+  url: string;
+  playing: boolean;
+  setUrl: (url: string) => void;
+  setPlaying: (playing: boolean) => void;
+  setState: (state: { url: string; playing: boolean }) => void;
+}
+
+export const useMovieItemPreviewPlayback =
+  create<MovieItemPreviewPlaybackState>((set) => ({
+    url: "",
+    playing: false,
+    setUrl: (url: string) => set({ url }),
+    setPlaying: (playing: boolean) => set({ playing }),
+    setState: (state: { url: string; playing: boolean }) => set(state),
+  }));
 
 function MovieItem({
   item,
@@ -46,12 +73,21 @@ function MovieItem({
 }): JSX.Element {
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { MetaScreenPlayerMuted } = usePreviewPlayer();
 
   const [playButtonLoading, setPlayButtonLoading] = React.useState(false);
   const [contextMenu, setContextMenu] = React.useState<{
     mouseX: number;
     mouseY: number;
   } | null>(null);
+
+  const [previewPlaybackState, setPreviewPlaybackState] = React.useState({
+    url: "",
+    playing: false,
+  });
+  const hoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const handleClose = () => {
     setContextMenu(null);
@@ -196,37 +232,67 @@ function MovieItem({
         <MenuItem
           onClick={async () => {
             if (!item) return;
-            switch (item.type) {
-              case "movie":
-              case "episode":
-                if (
-                  item.type === "episode" &&
-                  (item?.viewOffset ?? 0) < item.duration
-                ) {
-                  item.viewCount = 1;
-                } else {
-                  item.viewCount = !Boolean(item.viewCount) ? 1 : 0;
-                }
-                await setMediaPlayedStatus(
-                  Boolean(item.viewCount),
-                  item.ratingKey
-                );
-                break;
-              case "show":
-                const newViewedLeafCount =
-                  item.viewedLeafCount === item.leafCount ? 0 : item.leafCount;
-                item.viewedLeafCount = newViewedLeafCount;
-                await setMediaPlayedStatus(
-                  newViewedLeafCount === item.leafCount,
-                  item.ratingKey
-                );
-                break;
-              default:
-                break;
+            let state = "unwatched";
+
+            if (
+              (item.type === "movie" && Boolean(item.viewCount)) ||
+              (item.type === "episode" &&
+                (item.viewOffset ?? 0) >= item.duration)
+            ) {
+              state = "watched";
             }
 
-            handleClose();
-            refetchData?.();
+            if (item.type === "show") {
+              state =
+                item.viewedLeafCount === item.leafCount
+                  ? "watched"
+                  : "unwatched";
+            }
+
+            useConfirmModal.getState().setModal({
+              title: `Mark as ${state === "watched" ? "Unwatched" : "Watched"}`,
+              message: `Are you sure you want to mark "${item.title}" as ${
+                state === "watched" ? "Unwatched" : "Watched"
+              }?`,
+              onConfirm: async () => {
+                switch (item.type) {
+                  case "movie":
+                  case "episode":
+                    if (
+                      item.type === "episode" &&
+                      (item?.viewOffset ?? 0) < item.duration
+                    ) {
+                      item.viewCount = 1;
+                    } else {
+                      item.viewCount = !Boolean(item.viewCount) ? 1 : 0;
+                    }
+                    await setMediaPlayedStatus(
+                      Boolean(item.viewCount),
+                      item.ratingKey
+                    );
+                    break;
+                  case "show":
+                    const newViewedLeafCount =
+                      item.viewedLeafCount === item.leafCount
+                        ? 0
+                        : item.leafCount;
+                    item.viewedLeafCount = newViewedLeafCount;
+                    await setMediaPlayedStatus(
+                      newViewedLeafCount === item.leafCount,
+                      item.ratingKey
+                    );
+                    break;
+                  default:
+                    break;
+                }
+
+                handleClose();
+                refetchData?.();
+              },
+              onCancel: () => {
+                handleClose();
+              },
+            });
           }}
         >
           <ListItemIcon>
@@ -271,26 +337,21 @@ function MovieItem({
           minWidth: itemsPerPage
             ? `calc((100vw / ${itemsPerPage}) - 10px - (5vw / ${itemsPerPage}))`
             : "100%",
-          backgroundColor: "#1A1A1A",
+          backgroundColor: "rgba(18, 18, 22, 0.9)",
 
           borderRadius: "7px",
           overflow: "hidden",
           mb: "0px",
+          position: "relative",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
 
           "&:hover": {
-            // backgroundColor: "#000000AA",
-            // backgroundBlendMode: "darken",
-            // backgroundSize: "cover",
-            // backgroundPosition: "center",
-
-            transform: "scale(1.15)",
-            transition: "all 0.2s ease, transform 0.5s ease",
+            transform: "scale(1.08)",
+            transition: "all 0.4s ease",
             zIndex: 1000,
-            boxShadow: "0px 0px 20px #000000",
+            boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.3)",
             position: "relative",
-
             pb: "10px",
-
             mb: "-42px",
           },
 
@@ -301,14 +362,10 @@ function MovieItem({
               : 3
           })`]: {
             height: "32px",
+            opacity: 1,
           },
 
-          // "&:hover > :nth-child(3)": {
-          //   opacity: 1,
-          //   transition: "all 0.25s ease-in",
-          // },
-
-          transition: "all 0.2s ease, transform 0.5s ease",
+          transition: "all 0.4s ease, transform 0.4s ease",
           cursor: "pointer",
         }}
         onContextMenu={(e) => {
@@ -345,9 +402,38 @@ function MovieItem({
             setSearchParams({ mid: item.ratingKey.toString() });
           }
         }}
+        onMouseEnter={() => {
+          if (!item.ratingKey) return;
+          if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+
+          hoverTimerRef.current = setTimeout(async () => {
+            const data = await getLibraryMeta(item.ratingKey);
+            if (!data) return;
+
+            const mediaURL =
+              data.Extras?.Metadata?.[0]?.Media?.[0]?.Part[0]?.key;
+            if (!mediaURL) return;
+            setPreviewPlaybackState({
+              url: `${localStorage.getItem(
+                "server"
+              )}${mediaURL}&X-Plex-Token=${localStorage.getItem(
+                "accessToken"
+              )}`,
+              playing: true,
+            });
+          }, 1000);
+        }}
+        onMouseLeave={() => {
+          if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+          setPreviewPlaybackState({
+            url: "",
+            playing: false,
+          });
+          return;
+        }}
       >
         <Box
-          sx={{
+          style={{
             width: "100%",
             aspectRatio: "16/9",
 
@@ -372,33 +458,99 @@ function MovieItem({
             position: "relative",
           }}
         >
+          <Box
+            sx={{
+              position: "absolute",
+              // make it take up the full width of the parent
+              width: "100%",
+              aspectRatio: "16/9",
+              left: 0,
+              top: 0,
+              opacity: previewPlaybackState.playing ? 1 : 0,
+              transition: "all 2s ease",
+              backgroundColor: previewPlaybackState.playing
+                ? "rgba(18, 18, 22, 0.9)"
+                : "transparent",
+              pointerEvents: "none",
+
+              overflow: "hidden",
+            }}
+          >
+            <ReactPlayer
+              url={previewPlaybackState.url ?? undefined}
+              controls={false}
+              width="100%"
+              height="100%"
+              autoplay={true}
+              playing={previewPlaybackState.playing}
+              volume={MetaScreenPlayerMuted ? 0 : 0.5}
+              muted={MetaScreenPlayerMuted}
+              onEnded={() => {
+                setPreviewPlaybackState({
+                  url: "",
+                  playing: false,
+                });
+              }}
+              pip={false}
+              config={{
+                file: {
+                  attributes: { disablePictureInPicture: true },
+                },
+              }}
+            />
+          </Box>
+
+          <IconButton
+            sx={{
+              backgroundColor: "#00000088",
+              opacity: previewPlaybackState.url ? 1 : 0,
+              transition: "all 1s ease",
+              position: "absolute",
+              bottom: "10px",
+              right: "10px",
+              zIndex: 10,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (!item) return;
+
+              usePreviewPlayer.setState((state) => ({
+                MetaScreenPlayerMuted: !state.MetaScreenPlayerMuted,
+              }));
+            }}
+          >
+            {MetaScreenPlayerMuted ? (
+              <VolumeOffRounded fontSize="small" />
+            ) : (
+              <VolumeUpRounded fontSize="small" />
+            )}
+          </IconButton>
+
           {((item.type === "show" && item.leafCount === item.viewedLeafCount) ||
             (item.type === "movie" &&
-              item?.viewCount &&
+              item?.viewCount !== undefined &&
               item.viewCount > 0)) && (
             <Box
-              sx={{
-                width: "80px",
-                height: "40px",
+              style={{
                 position: "absolute",
-                top: "-6px",
-                right: "-26px",
-                transform: "rotate(45deg)",
-
-                backgroundColor: "#000000AA",
-
+                top: "10px",
+                right: "10px",
+                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                borderRadius: "50%",
+                width: "32px",
+                height: "32px",
                 display: "flex",
-                flexDirection: "row",
-                alignItems: "flex-end",
+                alignItems: "center",
                 justifyContent: "center",
-                padding: "4px",
+                zIndex: 10,
               }}
             >
               <Tooltip title="Watched" arrow placement="top">
                 <CheckCircleOutlineRounded
-                  fontSize="medium"
+                  fontSize="small"
                   sx={{
-                    transform: "rotate(-45deg)",
+                    color: (theme) => theme.palette.primary.light,
                   }}
                 />
               </Tooltip>
@@ -412,51 +564,60 @@ function MovieItem({
             value={((item?.viewOffset ?? 0) / item.duration) * 100}
             sx={{
               width: "100%",
+              height: "3px",
+              bgcolor: "rgba(255, 255, 255, 0.1)",
+              "& .MuiLinearProgress-bar": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
             }}
           />
         )}
         <Box
-          sx={{
+          style={{
             width: "100%",
             height: "auto",
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
             justifyContent: "flex-end",
-            padding: "10px",
+            padding: "16px",
             userSelect: "none",
-            transition: "all 0.5s ease",
+            transition: "all 0.4s ease",
             transform: "translateX(0%)",
-            transformStyle: "preserve-3d",
+            position: "relative",
+            zIndex: 5,
           }}
         >
           <Typography
             sx={{
-              fontSize: "14px",
-              fontWeight: "700",
-              letterSpacing: "0.15em",
-              color: theme => theme.palette.primary.main,
+              fontSize: "12px",
+              fontWeight: "500",
+              letterSpacing: "0.05em",
+              color: (theme) => theme.palette.primary.light,
               textTransform: "uppercase",
-              mt: "2px",
+              opacity: 0.9,
+              mb: 0.5,
             }}
           >
             {item.type} {item.type === "episode" && item.index}
           </Typography>
 
           <Typography
-            sx={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
+            style={{
+              fontSize: "1.2rem",
+              fontWeight: "600",
               color: "#FFFFFF",
-              "@media (max-width: 2000px)": {
-                fontSize: "1.2rem",
-              },
               textOverflow: "ellipsis",
               overflow: "hidden",
               whiteSpace: "nowrap",
               maxLines: 1,
               maxInlineSize: "100%",
-              mt: ["episode"].includes(item.type) ? "2px" : "0px",
+              marginTop: ["episode"].includes(item.type) ? "2px" : "0px",
+            }}
+            sx={{
+              "@media (max-width: 2000px)": {
+                fontSize: "1.1rem",
+              },
             }}
           >
             {item.title}
@@ -472,18 +633,16 @@ function MovieItem({
                 });
               }}
               sx={{
-                fontSize: "1rem",
+                fontSize: "0.9rem",
                 fontWeight: "normal",
                 color: "#FFFFFF",
-                opacity: 0.7,
-                mt: "4px",
-                mb: 0.5,
-
-                transition: "all 0.5s ease",
+                opacity: 0.75,
+                mb: 1,
+                transition: "opacity 0.4s ease",
                 "&:hover": {
                   opacity: 1,
+                  textDecoration: "none",
                 },
-
                 textOverflow: "ellipsis",
                 overflow: "hidden",
                 maxLines: 1,
@@ -547,9 +706,10 @@ function MovieItem({
             {item.duration && ["episode", "movie"].includes(item.type) && (
               <Typography
                 sx={{
-                  fontSize: "14px",
-                  fontWeight: "light",
+                  fontSize: "13px",
+                  fontWeight: "400",
                   color: "#FFFFFF",
+                  opacity: 0.7,
                 }}
               >
                 {durationToText(item.duration)}
@@ -560,9 +720,10 @@ function MovieItem({
               (item.seasonCount ?? item.childCount) && (
                 <Typography
                   sx={{
-                    fontSize: "14px",
-                    fontWeight: "light",
+                    fontSize: "13px",
+                    fontWeight: "400",
                     color: "#FFFFFF",
+                    opacity: 0.7,
                   }}
                 >
                   {(item.seasonCount ?? item.childCount ?? 1) > 1
@@ -576,9 +737,10 @@ function MovieItem({
             {item.year && (
               <Typography
                 sx={{
-                  fontSize: "14px",
-                  fontWeight: "light",
+                  fontSize: "13px",
+                  fontWeight: "400",
                   color: "#FFFFFF",
+                  opacity: 0.7,
                 }}
               >
                 {item.year}
@@ -592,12 +754,11 @@ function MovieItem({
             width: "100%",
             height: "0px", // 32px
             overflow: "hidden",
-
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            transition: "all 0.2s ease",
+            transition: "all 0.4s ease",
           }}
         >
           <Box
@@ -606,9 +767,9 @@ function MovieItem({
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              padding: "0px 16px",
               gap: 1,
-              padding: "2px 10px",
             }}
           >
             <Button
@@ -616,21 +777,19 @@ function MovieItem({
               sx={{
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#F4F8FF",
-                color: "#1A1A1A",
+                backgroundColor: (theme) => theme.palette.background.paper,
+                color: (theme) => theme.palette.primary.contrastText,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 "&:hover": {
-                  backgroundColor: "primary.main",
+                  backgroundColor: (theme) => theme.palette.primary.dark,
                 },
-                gap: 1,
-                transition: "all 0.2s ease-in-out",
+                gap: 0.5,
+                transition: "all 0.4s ease-in-out",
                 padding: "0px 10px",
-                fontSize: "12px",
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
+                fontSize: "13px",
+                borderRadius: "6px",
+                boxShadow: "none",
               }}
               disabled={playButtonLoading}
               onClick={async (e) => {
@@ -639,10 +798,10 @@ function MovieItem({
               }}
             >
               {playButtonLoading ? (
-                <CircularProgress size="small" />
+                <CircularProgress size={16} color="inherit" />
               ) : (
                 <>
-                  <PlayArrowRounded fontSize="small" /> Play
+                  <PlayArrowRounded style={{ fontSize: "18px" }} /> Play
                 </>
               )}
             </Button>
@@ -650,33 +809,6 @@ function MovieItem({
             <WatchListButton item={item} />
           </Box>
         </Box>
-        {/* <Box sx={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          backgroundColor: "#00000055",
-          backgroundImage: ["episode"].includes(item.type)
-            ? `url(${getTranscodeImageURL(
-                `${item.thumb}?X-Plex-Token=${localStorage.getItem(
-                  "accessToken"
-                )}`,
-                300,
-                170
-              )})`
-            : `url(${getTranscodeImageURL(
-                `${item.art}?X-Plex-Token=${localStorage.getItem("accessToken")}`,
-                300,
-                170
-              )})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(10vw)",
-  
-          zIndex: -1,
-          transform: "translateZ(-10px) scale(1)",
-          opacity: 0,
-          transition: "all 2s ease",
-        }}></Box> */}
       </Box>
     </>
   );
@@ -686,44 +818,53 @@ export default MovieItem;
 
 export function WatchListButton({ item }: { item: Plex.Metadata }) {
   const WatchList = useWatchListCache();
+  const [isLoading, setIsLoading] = React.useState(false);
 
   return (
     <Button
       variant="contained"
       sx={{
-        width: "fit-content",
-        height: "100%",
-        backgroundColor: "#5A5A5A",
-        color: "#F4F8FF",
-        fontSize: "12px",
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
+        width: "48px",
+        height: "38px",
+        backgroundColor: (theme) => theme.palette.background.paper,
+        color: (theme) => theme.palette.text.primary,
+        borderRadius: "6px",
         "&:hover": {
-          backgroundColor: "#333333",
+          backgroundColor: (theme) => theme.palette.primary.dark,
         },
-        gap: 1,
-        transition: "all 0.2s ease-in-out",
+        transition: "all 0.4s ease-in-out",
+        boxShadow: "none",
 
         display: "flex",
-        flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-
-        minWidth: "20px",
+        position: "relative",
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (!item) return;
+        if (!item || isLoading) return;
+        setIsLoading(true);
+
+        WatchListCacheEmitter.once("watchListUpdate", () => {
+          setIsLoading(false);
+        });
+
         if (WatchList.isOnWatchList(item.guid))
           return WatchList.removeItem(item.guid);
 
         WatchList.addItem(item);
       }}
     >
-      {WatchList.isOnWatchList(item.guid) ? (
-        <BookmarkRounded fontSize="small" />
+      {isLoading ? (
+        <CircularProgress size={14} color="inherit" />
       ) : (
-        <BookmarkBorderRounded fontSize="small" />
+        <>
+          {WatchList.isOnWatchList(item.guid) ? (
+            <BookmarkRounded fontSize="small" />
+          ) : (
+            <BookmarkBorderRounded fontSize="small" />
+          )}
+        </>
       )}
     </Button>
   );

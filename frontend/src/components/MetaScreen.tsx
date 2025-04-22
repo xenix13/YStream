@@ -3,21 +3,26 @@ import {
   Backdrop,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
-  ClickAwayListener,
   Collapse,
   Divider,
   Grid,
   IconButton,
   LinearProgress,
+  ListItemIcon,
+  Menu,
   MenuItem,
+  Paper,
   Popover,
   Rating,
   Select,
+  Skeleton,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { JSX, useContext, useEffect, useState } from "react";
 import {
   getLibraryMeta,
   getLibraryMetaChildren,
@@ -26,25 +31,30 @@ import {
   setMediaRating,
 } from "../plex";
 import {
-  BookmarkRounded,
-  BookmarkBorderRounded,
   CheckCircleRounded,
   CloseRounded,
   PlayArrowRounded,
   VolumeOffRounded,
   VolumeUpRounded,
   CheckCircleOutlineRounded,
-  StarOutlineOutlined,
   StarRounded,
   StarOutlineRounded,
+  RecommendRounded,
+  CheckBoxOutlineBlankRounded,
+  CheckBoxRounded,
 } from "@mui/icons-material";
 import { durationToText } from "./MovieItemSlider";
 import ReactPlayer from "react-player";
 import { usePreviewPlayer } from "../states/PreviewPlayerState";
 import MovieItem from "./MovieItem";
 import { useBigReader } from "./BigReader";
-import { useWatchListCache } from "../states/WatchListCache";
 import { useInView } from "react-intersection-observer";
+import { WatchListButton } from "./MovieItem";
+import { alpha } from "@mui/material/styles";
+import { AnimatePresence, motion } from "framer-motion";
+import { useConfirmModal } from "./ConfirmModal";
+import { PlexCommunity } from "../plex/plexCommunity";
+import moment from "moment";
 
 function MetaScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -65,8 +75,6 @@ function MetaScreen() {
 
   const [previewVidURL, setPreviewVidURL] = useState<string | null>(null);
   const [previewVidPlaying, setPreviewVidPlaying] = useState<boolean>(false);
-
-  const WatchList = useWatchListCache();
 
   const mid = searchParams.get("mid");
 
@@ -200,6 +208,20 @@ function MetaScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeason, data]);
 
+  const refetchEpisodes = () => {
+    if (!data) return;
+    if (
+      data?.type === "show" &&
+      data?.Children?.Metadata[selectedSeason]?.ratingKey
+    ) {
+      getLibraryMetaChildren(
+        data?.Children?.Metadata[selectedSeason]?.ratingKey as string
+      ).then((res) => {
+        setEpisodes(res);
+      });
+    }
+  };
+
   if (!searchParams.has("mid")) return <></>;
 
   if (loading)
@@ -217,7 +239,7 @@ function MetaScreen() {
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
-        zIndex: 9999,
+        zIndex: 100,
       }}
       onClick={() => {
         setSearchParams(new URLSearchParams());
@@ -225,14 +247,14 @@ function MetaScreen() {
     >
       <Box
         sx={{
-          width: "120vh",
+          width: "130vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
           justifyContent: "flex-start",
-          backgroundColor: "#181818",
+          backgroundColor: "#121216",
           mt: 4,
-          pb: "20vh",
+          pb: "40vh",
 
           borderTopLeftRadius: "10px",
           borderTopRightRadius: "10px",
@@ -352,7 +374,7 @@ function MetaScreen() {
             height: "30vh",
             width: "100%",
             background:
-              "linear-gradient(180deg, #18181800, #181818FF, #181818FF)",
+              "linear-gradient(180deg, #12121600, #121216FF, #121216FF)",
             zIndex: 1,
           }}
         />
@@ -370,24 +392,40 @@ function MetaScreen() {
             zIndex: 2,
           }}
         >
-          <img
-            src={`${getTranscodeImageURL(
-              `${data?.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
-              600,
-              900
-            )}`}
-            alt=""
-            style={{
+          <Box
+            sx={{
               width: "30%",
-              aspectRatio: "2/3",
-              boxShadow: "-10px 10px 01px 0px #000000FF",
-              backgroundColor: "#00000088",
-              objectFit: "cover",
               borderRadius: "10px",
+              overflow: "hidden",
+              boxShadow: (theme) =>
+                `0 20px 25px -5px ${theme.palette.common.black}`,
+              position: "relative",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "scale(1.02)",
+                boxShadow: (theme) =>
+                  `0 25px 30px -5px ${theme.palette.common.black}`,
+              },
             }}
-          />
+          >
+            <img
+              src={`${getTranscodeImageURL(
+                `${data?.thumb}?X-Plex-Token=${localStorage.getItem(
+                  "accessToken"
+                )}`,
+                600,
+                900
+              )}`}
+              alt={data?.title || ""}
+              style={{
+                width: "100%",
+                aspectRatio: "2/3",
+                backgroundColor: "#00000088",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </Box>
 
           <Box
             sx={{
@@ -419,21 +457,12 @@ function MetaScreen() {
                   mb: "-10px",
                 }}
               >
-                {/* <img
-                  src="/plexIcon.png"
-                  alt=""
-                  height="40"
-                  style={{
-                    aspectRatio: 1,
-                    borderRadius: 8,
-                  }}
-                /> */}
                 <Typography
                   sx={{
-                    fontSize: "30px",
+                    fontSize: "24px",
                     fontWeight: "900",
                     letterSpacing: "0.1em",
-                    color: theme => theme.palette.primary.main,
+                    color: (theme) => theme.palette.primary.main,
                     textTransform: "uppercase",
                   }}
                 >
@@ -446,6 +475,7 @@ function MetaScreen() {
                   fontSize: "3rem",
                   fontWeight: "bold",
                   mt: 0,
+                  color: (theme) => theme.palette.text.primary,
                 }}
               >
                 {data?.title}
@@ -459,24 +489,23 @@ function MetaScreen() {
                   alignItems: "center",
                   justifyContent: "flex-start",
                   mt: -1,
+                  gap: 1,
                 }}
               >
                 {data?.type === "show" &&
                   data?.leafCount === data?.viewedLeafCount && (
                     <CheckCircleRounded
                       sx={{
-                        color: "#FFFFFF",
+                        color: (theme) => theme.palette.primary.light,
                         fontSize: "large",
-                        mr: 1,
                       }}
                     />
                   )}
                 {data?.type === "movie" && (data?.viewCount ?? 0) > 0 && (
                   <CheckCircleRounded
                     sx={{
-                      color: "#FFFFFF",
+                      color: (theme) => theme.palette.primary.light,
                       fontSize: "large",
-                      mr: 1,
                     }}
                   />
                 )}
@@ -485,11 +514,11 @@ function MetaScreen() {
                     sx={{
                       fontSize: "medium",
                       fontWeight: "light",
-                      color: "#FFFFFF",
-                      border: "1px dotted #AAAAAA",
+                      color: (theme) => theme.palette.text.secondary,
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
                       borderRadius: "5px",
                       px: 1,
-                      py: -0.5,
+                      py: 0.2,
                     }}
                   >
                     {data?.contentRating}
@@ -500,8 +529,7 @@ function MetaScreen() {
                     sx={{
                       fontSize: "medium",
                       fontWeight: "light",
-                      color: "#FFFFFF",
-                      ml: data?.contentRating ? 1 : 0,
+                      color: (theme) => theme.palette.text.secondary,
                     }}
                   >
                     {data?.year}
@@ -512,9 +540,7 @@ function MetaScreen() {
                     sx={{
                       fontSize: "medium",
                       fontWeight: "light",
-                      color: "#FFFFFF",
-
-                      ml: 1,
+                      color: (theme) => theme.palette.text.secondary,
                     }}
                   >
                     {data?.rating}
@@ -526,8 +552,7 @@ function MetaScreen() {
                       sx={{
                         fontSize: "medium",
                         fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
+                        color: (theme) => theme.palette.text.secondary,
                       }}
                     >
                       {durationToText(data?.duration)}
@@ -540,8 +565,7 @@ function MetaScreen() {
                       sx={{
                         fontSize: "medium",
                         fontWeight: "light",
-                        color: "#FFFFFF",
-                        ml: 1,
+                        color: (theme) => theme.palette.text.secondary,
                       }}
                     >
                       {data?.childCount > 1
@@ -560,20 +584,20 @@ function MetaScreen() {
                   alignItems: "center",
                   justifyContent: "flex-start",
                   gap: 2,
-                  mt: 1,
+                  mt: 2,
                 }}
               >
                 <Button
                   variant="contained"
                   sx={{
-                    backgroundColor: "#CCCCCC",
-                    color: "#000000",
+                    height: "38px",
+                    backgroundColor: (theme) => theme.palette.background.paper,
+                    color: (theme) => theme.palette.text.primary,
                     fontWeight: "bold",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     "&:hover": {
-                      backgroundColor: "primary.main",
-                      gap: 1.5,
+                      backgroundColor: (theme) => theme.palette.primary.dark,
                     },
                     gap: 1,
                     transition: "all 0.2s ease-in-out",
@@ -616,88 +640,110 @@ function MetaScreen() {
                         : ""
                     }E${data?.OnDeck.Metadata.index}`}
                 </Button>
-                <IconButton
-                  sx={{
-                    backgroundColor: "#202020",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    border: "1px solid #FFFFFF",
-                    "&:hover": {
-                      backgroundColor: "primary.main",
-                    },
-                  }}
-                  onClick={() => {
-                    if (!data) return;
-                    if (WatchList.isOnWatchList(data?.guid as string))
-                      WatchList.removeItem(data?.guid as string);
-                    else WatchList.addItem(data);
-                  }}
-                >
-                  {WatchList.isOnWatchList(data?.guid as string) ? (
-                    <BookmarkRounded fontSize="medium" />
-                  ) : (
-                    <BookmarkBorderRounded fontSize="medium" />
-                  )}
-                </IconButton>
+
+                <Tooltip placement="top" arrow title="Watchlist">
+                  <WatchListButton item={data as Plex.Metadata} />
+                </Tooltip>
 
                 {data && <RatingButton item={data} />}
 
-                <IconButton
-                  sx={{
-                    backgroundColor: "#202020",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    border: "1px solid #FFFFFF",
-                    "&:hover": {
-                      backgroundColor: "primary.main",
-                    },
-                  }}
-                  onClick={async () => {
-                    if (!data) return;
-                    switch (data.type) {
-                      case "movie":
-                        data.viewCount = !Boolean(data.viewCount) ? 1 : 0;
-                        setData({ ...data });
-                        await setMediaPlayedStatus(
-                          Boolean(data.viewCount),
-                          data.ratingKey
-                        );
-                        break;
-                      case "show":
-                        const newViewedLeafCount =
-                          data.viewedLeafCount === data.leafCount
-                            ? 0
-                            : data.leafCount;
-                        data.viewedLeafCount = newViewedLeafCount;
-                        setData({ ...data });
-                        await setMediaPlayedStatus(
-                          newViewedLeafCount === data.leafCount,
-                          data.ratingKey
-                        );
-                        break;
-                      default:
-                        break;
-                    }
-                  }}
+                <Tooltip
+                  placement="top"
+                  arrow
+                  title={
+                    `Mark as ` +
+                    (data?.type === "movie"
+                      ? !Boolean(data?.viewCount)
+                        ? "watched"
+                        : "unwatched"
+                      : data?.viewedLeafCount === data?.leafCount
+                      ? "unwatched"
+                      : "watched")
+                  }
                 >
-                  {data?.type === "movie" ? (
-                    !((data?.viewCount ?? 0) > 0) ? (
-                      <CheckCircleOutlineRounded fontSize="small" />
-                    ) : (
-                      <CheckCircleRounded fontSize="small" />
-                    )
-                  ) : data?.type === "show" ? (
-                    data?.viewedLeafCount === data?.leafCount ? (
-                      <CheckCircleRounded fontSize="small" />
-                    ) : (
-                      <CheckCircleOutlineRounded fontSize="small" />
-                    )
-                  ) : null}
-                </IconButton>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      height: "38px",
+                      backgroundColor: (theme) =>
+                        theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.primary,
+                      fontWeight: "bold",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      "&:hover": {
+                        backgroundColor: (theme) => theme.palette.primary.main,
+                      },
+                      transition: "all 0.2s ease-in-out",
+                      display: "flex",
+                      gap: 1,
+                    }}
+                    onClick={async () => {
+                      if (!data) return;
+                      let state = "unwatched";
+
+                      if (data?.type === "movie" && (data?.viewCount ?? 0) > 0)
+                        state = "watched";
+                      if (
+                        data?.type === "show" &&
+                        data?.viewedLeafCount === data?.leafCount
+                      )
+                        state = "watched";
+
+                      useConfirmModal.getState().setModal({
+                        title: `Mark as ${
+                          state === "unwatched" ? "watched" : "unwatched"
+                        }`,
+                        message: `Are you sure you want to mark ${
+                          data?.title
+                        } as ${
+                          state === "unwatched" ? "watched" : "unwatched"
+                        }?`,
+                        onConfirm: async () => {
+                          switch (data.type) {
+                            case "movie":
+                              data.viewCount = !Boolean(data.viewCount) ? 1 : 0;
+                              setData({ ...data });
+                              await setMediaPlayedStatus(
+                                Boolean(data.viewCount),
+                                data.ratingKey
+                              );
+                              break;
+                            case "show":
+                              const newViewedLeafCount =
+                                data.viewedLeafCount === data.leafCount
+                                  ? 0
+                                  : data.leafCount;
+                              data.viewedLeafCount = newViewedLeafCount;
+                              setData({ ...data });
+                              await setMediaPlayedStatus(
+                                newViewedLeafCount === data.leafCount,
+                                data.ratingKey
+                              );
+                              break;
+                            default:
+                              break;
+                          }
+                        },
+                        onCancel: () => {},
+                      });
+                    }}
+                  >
+                    {data?.type === "movie" ? (
+                      !((data?.viewCount ?? 0) > 0) ? (
+                        <CheckCircleOutlineRounded fontSize="small" />
+                      ) : (
+                        <CheckCircleRounded fontSize="small" />
+                      )
+                    ) : data?.type === "show" ? (
+                      data?.viewedLeafCount === data?.leafCount ? (
+                        <CheckCircleRounded fontSize="small" />
+                      ) : (
+                        <CheckCircleOutlineRounded fontSize="small" />
+                      )
+                    ) : null}
+                  </Button>
+                </Tooltip>
               </Box>
 
               <Box
@@ -711,13 +757,19 @@ function MetaScreen() {
                   mt: 2,
                 }}
               >
-                <Typography>Genres: </Typography>
+                <Typography color="text.secondary">Genres: </Typography>
                 {data?.Genre?.slice(0, 5).map((genre, index) => (
                   <Typography
+                    key={genre.id}
                     sx={{
-                      color: "#FFFFFF",
-                      fontWeight: "bold",
+                      color: (theme) => theme.palette.text.primary,
+                      fontWeight: "medium",
                       cursor: "pointer",
+                      "&:hover": {
+                        color: (theme) => theme.palette.primary.main,
+                        textDecoration: "none",
+                      },
+                      transition: "all 0.2s ease",
                     }}
                     onClick={() => {
                       setSearchParams(
@@ -734,7 +786,7 @@ function MetaScreen() {
               </Box>
 
               <Collapse in={Boolean(languages || subTitles)}>
-                <Box>
+                <Box sx={{ mt: 1 }}>
                   <Box
                     sx={{
                       width: "100%",
@@ -747,13 +799,13 @@ function MetaScreen() {
                   >
                     {languages && languages.length > 0 && (
                       <>
-                        <Typography>Audio: </Typography>
+                        <Typography color="text.secondary">Audio: </Typography>
                         {languages.slice(0, 10).map((lang, index) => (
                           <Typography
                             key={index}
                             sx={{
-                              color: "#FFFFFF",
-                              fontWeight: "bold",
+                              color: (theme) => theme.palette.text.primary,
+                              fontWeight: "medium",
                             }}
                           >
                             {lang}
@@ -780,13 +832,15 @@ function MetaScreen() {
                   >
                     {subTitles && subTitles.length > 0 && (
                       <>
-                        <Typography>Subtitles: </Typography>
+                        <Typography color="text.secondary">
+                          Subtitles:{" "}
+                        </Typography>
                         {subTitles.slice(0, 10).map((lang, index) => (
                           <Typography
                             key={index}
                             sx={{
-                              color: "#FFFFFF",
-                              fontWeight: "bold",
+                              color: (theme) => theme.palette.text.primary,
+                              fontWeight: "medium",
                             }}
                           >
                             {lang}
@@ -815,6 +869,7 @@ function MetaScreen() {
                   maxInlineSize: "100%",
                   userSelect: "none",
                   cursor: "zoom-in",
+                  color: (theme) => theme.palette.text.secondary,
                 }}
                 onClick={() => {
                   if (!data?.summary) return;
@@ -876,6 +931,14 @@ function MetaScreen() {
               text="Info"
             />
 
+            <TabButton
+              onClick={() => {
+                setPage(3);
+              }}
+              selected={page === 3}
+              text="Reviews"
+            />
+
             {data?.type === "show" &&
               data?.Children &&
               data?.Children.size > 1 && (
@@ -894,7 +957,9 @@ function MetaScreen() {
                 >
                   {data?.type === "show" &&
                     data?.Children?.Metadata?.map((season, index) => (
-                      <MenuItem value={index}>{season.title}</MenuItem>
+                      <MenuItem key={index} value={index}>
+                        {season.title}
+                      </MenuItem>
                     ))}
                 </Select>
               )}
@@ -902,9 +967,20 @@ function MetaScreen() {
 
           <Divider sx={{ mb: 2, width: "100%" }} />
 
-          {page === 0 && MetaPage1(data, loading, episodes, navigate)}
-          {page === 1 && MetaPage2(data)}
-          {page === 2 && MetaPage3(data)}
+          <AnimatePresence mode="wait">
+            {page === 0 && (
+              <MetaPage1
+                data={data}
+                loading={loading}
+                episodes={episodes}
+                refetchEpisodes={refetchEpisodes}
+                navigate={navigate}
+              />
+            )}
+            {page === 1 && MetaPage2(data)}
+            {page === 2 && MetaPage3(data)}
+            {page === 3 && <MetaPageReviews data={data} />}
+          </AnimatePresence>
         </Box>
       </Box>
     </Backdrop>
@@ -913,14 +989,153 @@ function MetaScreen() {
 
 export default MetaScreen;
 
-function MetaPage1(
-  data: Plex.Metadata | undefined,
-  loading: boolean,
-  episodes: Plex.Metadata[] | null | undefined,
-  navigate: (path: string) => void
-) {
+function MetaPage1({
+  data,
+  loading,
+  episodes,
+  refetchEpisodes,
+  navigate,
+}: {
+  data: Plex.Metadata | undefined;
+  loading: boolean;
+  episodes: Plex.Metadata[] | null | undefined;
+  refetchEpisodes: () => void;
+  navigate: (path: string) => void;
+}) {
+  const [selectedEpisodes, setSelectedEpisodes] = useState<Plex.Metadata[]>([]);
+  const [selectMode, setSelectMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!selectMode) setSelectedEpisodes([]);
+  }, [selectMode]);
+
   return (
     <>
+      <Collapse in={selectMode}>
+        {/* Buttons for marking selected episodes as watched or un-watched and a button for select all */}
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={() => {
+              setSelectMode(false);
+            }}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={() => {
+              if (selectedEpisodes.length === episodes?.length) {
+                setSelectedEpisodes([]);
+              } else {
+                setSelectedEpisodes(episodes ?? []);
+              }
+            }}
+          >
+            {selectedEpisodes.length === episodes?.length
+              ? "Unselect All"
+              : "Select All"}
+          </Button>
+
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={async () => {
+              useConfirmModal.getState().setModal({
+                title: `Mark as watched`,
+                message: `Are you sure you want to mark ${selectedEpisodes.length} episodes as watched?`,
+                onConfirm: async () => {
+                  await Promise.all(
+                    selectedEpisodes.map(async (episode) => {
+                      await setMediaPlayedStatus(true, episode.ratingKey);
+                    })
+                  );
+                  refetchEpisodes();
+                  setSelectMode(false);
+                },
+                onCancel: () => {},
+              });
+            }}
+          >
+            Mark as Watched
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.paper,
+              color: (theme) => theme.palette.text.primary,
+              fontWeight: "bold",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.primary.main,
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+            onClick={async () => {
+              useConfirmModal.getState().setModal({
+                title: `Mark as unwatched`,
+                message: `Are you sure you want to mark ${selectedEpisodes.length} episodes as unwatched?`,
+                onConfirm: async () => {
+                  await Promise.all(
+                    selectedEpisodes.map(async (episode) => {
+                      await setMediaPlayedStatus(false, episode.ratingKey);
+                    })
+                  );
+                  refetchEpisodes();
+                  setSelectMode(false);
+                },
+                onCancel: () => {},
+              });
+            }}
+          >
+            Mark as Unwatched
+          </Button>
+        </Box>
+      </Collapse>
       {data?.type === "movie" && !data && (
         <Box
           sx={{
@@ -938,9 +1153,15 @@ function MetaPage1(
       )}
 
       {data?.type === "movie" && data.Related?.Hub?.[0] && (
-        <Grid container spacing={2}>
+        <Grid
+          container
+          spacing={2}
+          sx={{
+            width: "100%",
+          }}
+        >
           {data.Related?.Hub?.[0]?.Metadata?.slice(0, 10).map((movie) => (
-            <Grid item xs={4}>
+            <Grid size={{ lg: 3, md: 4, sm: 6, xs: 12 }}>
               <MovieItem item={movie} />
             </Grid>
           ))}
@@ -965,6 +1186,11 @@ function MetaPage1(
 
       {data?.type === "show" && episodes && (
         <Box
+          component={motion.div}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
           sx={{
             width: "100%",
             display: "flex",
@@ -977,6 +1203,27 @@ function MetaPage1(
           {episodes?.map((episode) => (
             <EpisodeItem
               item={episode}
+              refetchData={refetchEpisodes}
+              selected={selectedEpisodes.some(
+                (selected) => selected.ratingKey === episode.ratingKey
+              )}
+              setSelected={() => {
+                if (
+                  selectedEpisodes.some(
+                    (selected) => selected.ratingKey === episode.ratingKey
+                  )
+                ) {
+                  setSelectedEpisodes(
+                    selectedEpisodes.filter(
+                      (selected) => selected.ratingKey !== episode.ratingKey
+                    )
+                  );
+                } else {
+                  setSelectedEpisodes([...selectedEpisodes, episode]);
+                }
+              }}
+              selectMode={selectMode}
+              setSelectMode={setSelectMode}
               onClick={() => {
                 navigate(
                   `/watch/${episode.ratingKey}${
@@ -998,6 +1245,11 @@ function MetaPage2(data: Plex.Metadata | undefined) {
 
   return (
     <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
       sx={{
         width: "100%",
         display: "flex",
@@ -1030,9 +1282,9 @@ function MetaPage2(data: Plex.Metadata | undefined) {
             {hub.title}
           </Typography>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ width: "100%" }}>
             {hub.Metadata?.map((item) => (
-              <Grid item lg={3} md={4} sm={6} xs={12}>
+              <Grid size={{ lg: 3, md: 4, sm: 6, xs: 12 }}>
                 <MovieItem item={item} />
               </Grid>
             ))}
@@ -1046,6 +1298,11 @@ function MetaPage2(data: Plex.Metadata | undefined) {
 function MetaPage3(data: Plex.Metadata | undefined) {
   return (
     <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
       sx={{
         width: "100%",
         display: "flex",
@@ -1087,6 +1344,265 @@ function MetaPage3(data: Plex.Metadata | undefined) {
   );
 }
 
+function MetaPageReviews({ data }: { data: Plex.Metadata | undefined }) {
+  const [reviews, setReviews] = useState<PlexCommunity.ReviewsData | null>(
+    null
+  );
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!data) return;
+    setLoading(true);
+    const metaID = data.guid.split("/").pop();
+    if (!metaID) return;
+
+    PlexCommunity.getUserReviews(metaID)
+      .then((res) => {
+        if (!res) return;
+        res.recentReviews.nodes =
+          res?.recentReviews.nodes.filter(
+            (review) =>
+              res?.topReviews?.nodes.find(
+                (topReview) => topReview.id === review.id
+              ) === undefined
+          ) ?? [];
+        setReviews(res);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [data]);
+
+  const renderReviewsSection = (
+    title: string,
+    reviewNodes: any[] | undefined,
+    isEmpty: boolean
+  ) => {
+    if (isEmpty) return null;
+    return (
+      <Box sx={{ width: "100%", mb: 5 }}>
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          color="text.primary"
+          sx={{ mb: 2 }}
+        >
+          {title}
+        </Typography>
+
+        {reviewNodes && reviewNodes.length > 0 ? (
+          <Grid container spacing={3} sx={{ width: "100%" }}>
+            {reviewNodes?.map((review) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={review.id}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    bgcolor: (theme) =>
+                      alpha(theme.palette.background.paper, 0.4),
+                    borderRadius: 2,
+                    height: "100%",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: (theme) =>
+                        alpha(theme.palette.background.paper, 0.6),
+                      transform: "translateY(-4px)",
+                      boxShadow: (theme) =>
+                        `0 8px 16px -2px ${alpha(
+                          theme.palette.common.black,
+                          0.15
+                        )}`,
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      mb: 2,
+                      position: "relative",
+                    }}
+                  >
+                    <Avatar
+                      src={review.userV2?.avatar}
+                      sx={{ width: 42, height: 42, boxShadow: 1 }}
+                    >
+                      {review.userV2?.username?.charAt(0) || "U"}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography fontWeight="medium" noWrap>
+                        {review.userV2?.username || "Anonymous User"}
+                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Rating
+                          value={review.reviewRating / 2}
+                          precision={0.5}
+                          size="small"
+                          readOnly
+                          sx={{ color: (theme) => theme.palette.primary.main }}
+                        />
+                        <Typography
+                          variant="caption"
+                          sx={{ ml: 1, color: "text.secondary" }}
+                        >
+                          {moment(new Date(review.date)).fromNow()}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Typography
+                    sx={{
+                      fontSize: "0.95rem",
+                      color: "text.secondary",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: "vertical",
+                      lineHeight: 1.6,
+
+                      ...(review.hasSpoilers && {
+                        filter: "blur(10px)",
+                        transition: "filter 0.2s ease",
+                        "&:hover": {
+                          filter: "blur(0)",
+                          transition: "filter 3s ease",
+                        },
+                      }),
+                    }}
+                  >
+                    {review.message || "No review text provided."}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 4,
+              width: "100%",
+              bgcolor: (theme) => alpha(theme.palette.background.paper, 0.2),
+              borderRadius: 2,
+            }}
+          >
+            <Typography color="text.secondary" variant="body2">
+              No reviews available in this category
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  const totalReviews =
+    (reviews?.topReviews?.nodes.length ?? 0) +
+    (reviews?.friendReviews?.nodes.length ?? 0) +
+    (reviews?.recentReviews?.nodes.length ?? 0);
+
+  return (
+    <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      sx={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        justifyContent: "flex-start",
+        gap: 4,
+        userSelect: "none",
+      }}
+    >
+      {totalReviews === 0 && !loading && (
+        <Typography>No one has reviewed this title yet.</Typography>
+      )}
+
+      {loading ? (
+        <Grid container spacing={3} sx={{ width: "100%" }}>
+          {[1, 2, 3].map((item) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item}>
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: (theme) =>
+                    alpha(theme.palette.background.paper, 0.4),
+                  borderRadius: 2,
+                  height: "100%",
+                }}
+              >
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                >
+                  <Skeleton variant="circular" width={40} height={40} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="70%" height={24} />
+                    <Skeleton variant="text" width="40%" height={20} />
+                  </Box>
+                </Box>
+                <Skeleton variant="text" />
+                <Skeleton variant="text" />
+                <Skeleton variant="text" width="80%" />
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      ) : !reviews ? (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            py: 6,
+            width: "100%",
+            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.2),
+            borderRadius: 2,
+          }}
+        >
+          <StarOutlineRounded
+            sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+          />
+          <Typography color="text.secondary" variant="body1">
+            No reviews available for this title yet
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ width: "100%" }}>
+          {renderReviewsSection(
+            "Recent Reviews",
+            reviews.recentReviews?.nodes,
+            !reviews.recentReviews?.nodes.length
+          )}
+
+          {renderReviewsSection(
+            "Top Reviews",
+            reviews.topReviews?.nodes,
+            !reviews.topReviews?.nodes.length
+          )}
+
+          {renderReviewsSection(
+            "Friend Reviews",
+            reviews.friendReviews?.nodes,
+            !reviews.friendReviews?.nodes.length
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 function ActorItem({
   role,
   data,
@@ -1098,95 +1614,96 @@ function ActorItem({
   const [, setSearchParams] = useSearchParams();
 
   return (
-    <Grid item xl={3} lg={4} md={6} sm={6} xs={6} ref={ref}>
+    <Grid size={{ xl: 3, lg: 4, md: 6, sm: 6, xs: 6 }} ref={ref}>
       {inView ? (
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: "20px",
+            backgroundColor: (theme) =>
+              alpha(theme.palette.background.paper, 0.4),
+            padding: "10px 20px",
+            borderRadius: "10px",
+            userSelect: "none",
+            cursor: "pointer",
+            transition: "transform 0.2s ease",
+
+            "&:hover": {
+              backgroundColor: (theme) =>
+                alpha(theme.palette.background.paper, 0.7),
+              transform: "translateY(-2px)",
+            },
+          }}
+          onClick={() => {
+            setSearchParams(
+              new URLSearchParams({
+                bkey: `/library/sections/${data.librarySectionID}/actor/${role.id}`,
+              })
+            );
+          }}
+        >
+          <Avatar
+            src={`${getTranscodeImageURL(
+              `${role.thumb}?X-Plex-Token=${localStorage.getItem(
+                "accessToken"
+              )}`,
+              200,
+              200
+            )}`}
+            sx={{
+              width: "25%",
+              height: "auto",
+              aspectRatio: "1/1",
+              borderRadius: "50%",
+            }}
+          />
+
           <Box
             sx={{
-              width: "100%",
+              width: "75%",
               display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: "20px",
-              backgroundColor: "#00000055",
-              padding: "10px 20px",
-              borderRadius: "10px",
-
-              userSelect: "none",
-              cursor: "pointer",
-
-              "&:hover": {
-                backgroundColor: "#00000088",
-                transition: "all 0.2s ease",
-              },
-
-              transition: "all 0.5s ease",
-            }}
-            onClick={() => {
-              setSearchParams(
-                new URLSearchParams({
-                  bkey: `/library/sections/${data.librarySectionID}/actor/${role.id}`,
-                })
-              );
+              flexDirection: "column",
+              alignItems: "flex-start",
+              overflow: "hidden",
             }}
           >
-            <Avatar
-              src={`${getTranscodeImageURL(
-                `${role.thumb}?X-Plex-Token=${localStorage.getItem(
-                  "accessToken"
-                )}`,
-                200,
-                200
-              )}`}
+            <Typography
               sx={{
-                width: "25%",
-                height: "auto",
-                aspectRatio: "1/1",
-                borderRadius: "50%",
-              }}
-            />
-
-            <Box
-              sx={{
-                width: "75%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                overflow: "hidden",
+                fontSize: "1rem",
+                color: (theme) => theme.palette.text.primary,
+                fontWeight: "medium",
               }}
             >
-              <Typography
-                sx={{
-                  fontSize: "1rem",
-                  color: "#FFFFFF",
-                }}
-              >
-                {role.tag}
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.75rem",
-                  color: "#BBBBBB",
-
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  whiteSpace: "nowrap",
-
-                  width: "100%",
-                }}
-              >
-                {role.role}
-              </Typography>
-            </Box>
+              {role.tag}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: "0.75rem",
+                color: (theme) => theme.palette.text.secondary,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                whiteSpace: "nowrap",
+                width: "100%",
+              }}
+            >
+              {role.role}
+            </Typography>
           </Box>
+        </Box>
       ) : (
         <Box
           sx={{
             width: "100%",
-            height: "100px", // Adjust height as needed
-            backgroundColor: "#00000055",
+            height: "100px",
+            backgroundColor: (theme) =>
+              alpha(theme.palette.background.paper, 0.2),
+            borderRadius: "10px",
           }}
         />
       )}
@@ -1223,6 +1740,7 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            backgroundColor: (theme) => theme.palette.background.paper,
           },
         }}
       >
@@ -1250,17 +1768,21 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
           }}
         />
       </Popover>
-      <IconButton
+      <Button
+        variant="contained"
         sx={{
-          backgroundColor: "#202020",
-          color: "#FFFFFF",
+          height: "38px",
+          backgroundColor: (theme) => theme.palette.background.paper,
+          color: (theme) => theme.palette.text.primary,
           fontWeight: "bold",
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          border: "1px solid #FFFFFF",
           "&:hover": {
-            backgroundColor: "primary.main",
+            backgroundColor: (theme) => theme.palette.primary.main,
           },
+          transition: "all 0.2s ease-in-out",
+          display: "flex",
+          gap: 1,
         }}
         onClick={(e) => {
           setAnchorEl(e.currentTarget);
@@ -1277,7 +1799,7 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
         ) : (
           <StarOutlineRounded fontSize="small" />
         )}
-      </IconButton>
+      </Button>
     </>
   );
 }
@@ -1285,183 +1807,345 @@ function RatingButton({ item }: { item: Plex.Metadata }): JSX.Element {
 function EpisodeItem({
   item,
   onClick,
+  refetchData,
+  selected,
+  setSelected,
+  selectMode,
+  setSelectMode,
 }: {
   item: Plex.Metadata;
   onClick?: (event: React.MouseEvent) => void;
+  refetchData: () => void;
+  selected?: boolean;
+  setSelected?: (selected: boolean) => void;
+  selectMode?: boolean;
+  setSelectMode?: (selectMode: boolean) => void;
 }): JSX.Element {
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "flex-start",
-        justifyContent: "flex-start",
-        gap: 1,
-        userSelect: "none",
-        cursor: "pointer",
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+  } | null>(null);
 
-        // on hover get the 2nd child and then the 1st child of that
-        "&:hover > :nth-child(2)": {
-          "& > :nth-child(1)": {
-            opacity: 1,
-            transition: "all 0.2s ease-in",
-          },
-        },
-      }}
-      onClick={(e) => {
-        if (onClick) onClick(e);
-      }}
-    >
-      <Box
-        sx={{
-          width: "5%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          alignSelf: "center",
-        }}
+  const handlePlay = async () => {
+    if (!item) return;
+    navigate(`/watch/${item.ratingKey}`);
+  };
+
+  const handleClose = () => {
+    setContextMenu(null);
+  };
+
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      mouseX: event.clientX - 2,
+      mouseY: event.clientY - 4,
+    });
+  };
+
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleClose}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
       >
         <Typography
           sx={{
-            fontSize: "1.25rem",
+            fontSize: "1rem",
             fontWeight: "bold",
-            color: "#FFFFFF",
-            textAlign: "center",
+            px: 1,
+            maxWidth: "200px",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
           }}
         >
-          {item.index}
+          EP.{item.index}: {item.title}
         </Typography>
-      </Box>
 
-      <Box
-        sx={{
-          width: "20%",
-          borderRadius: "5px",
-          aspectRatio: "16/9",
-          backgroundImage: `url(${getTranscodeImageURL(
-            `${item.thumb}?X-Plex-Token=${localStorage.getItem("accessToken")}`,
-            380,
-            214
-          )})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundBlendMode: "darken",
-          overflow: "hidden",
-          whiteSpace: "nowrap",
-          clipPath: "inset(0px 0px -10px 0px)",
-          transition: "all 0.5s ease",
-
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          justifyContent: "flex-start",
-
-          position: "relative",
-        }}
-      >
-        <PlayArrowRounded
+        <Divider
           sx={{
-            color: "#FFFFFF",
-            fontSize: "400%",
-            m: "auto",
-            opacity: 0,
-            backgroundColor: "#00000088",
-            borderRadius: "50%",
-
-            transition: "all 0.5s ease-out",
+            my: 1,
           }}
         />
 
-        {(item.viewOffset || (item.viewCount && item.viewCount >= 1)) && (
-          <LinearProgress
-            value={
-              item.viewOffset ? (item.viewOffset / item.duration) * 100 : 100
-            }
-            variant="determinate"
-            sx={{
-              width: "100%",
-              height: "5%",
-              backgroundColor: "#00000088",
-              borderRadius: "5px",
+        <MenuItem
+          onClick={async (e) => {
+            e.stopPropagation();
+            await handlePlay();
+            handleClose();
+          }}
+        >
+          <ListItemIcon>
+            <PlayArrowRounded fontSize="small" />
+          </ListItemIcon>
+          Play
+        </MenuItem>
+        <MenuItem
+          onClick={async () => {
+            if (!item) return;
+            let state = !(!Boolean(item.viewOffset) && Boolean(item.viewCount))
+              ? "unwatched"
+              : "watched";
 
-              position: "absolute",
-              bottom: 0,
-            }}
-          />
-        )}
-      </Box>
+            useConfirmModal.getState().setModal({
+              title: `Mark as ${state === "watched" ? "Unwatched" : "Watched"}`,
+              message: `Are you sure you want to mark "${item.title}" as ${
+                state === "watched" ? "Unwatched" : "Watched"
+              }?`,
+              onConfirm: async () => {
+                await setMediaPlayedStatus(
+                  !(!Boolean(item.viewOffset) && Boolean(item.viewCount)),
+                  item.ratingKey
+                );
 
+                handleClose();
+                refetchData?.();
+              },
+              onCancel: () => {
+                handleClose();
+              },
+            });
+          }}
+        >
+          <ListItemIcon>
+            {!Boolean(item.viewOffset) && Boolean(item.viewCount) ? (
+              <CheckCircleOutlineRounded fontSize="small" />
+            ) : (
+              <CheckCircleRounded fontSize="small" />
+            )}
+          </ListItemIcon>
+
+          {!Boolean(item.viewOffset) && Boolean(item.viewCount)
+            ? "Mark as Unwatched"
+            : "Mark as Watched"}
+        </MenuItem>
+        <MenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            if (setSelectMode) setSelectMode(!selectMode);
+            if (setSelected) setSelected(!selected);
+            handleClose();
+          }}
+        >
+          <ListItemIcon>
+            {selectMode ? (
+              <CheckBoxRounded fontSize="small" />
+            ) : (
+              <CheckBoxOutlineBlankRounded fontSize="small" />
+            )}
+          </ListItemIcon>
+          {selectMode ? "Disable Selection" : "Enable Selection"}
+        </MenuItem>
+      </Menu>
       <Box
         sx={{
-          width: "70%",
+          width: "100%",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           alignItems: "flex-start",
           justifyContent: "flex-start",
-          ml: 0.5,
+          gap: 2,
+          userSelect: "none",
+          cursor: "pointer",
+          borderRadius: "10px",
+          p: 1.5,
+          mb: 1,
+          transition: "all 0.5s ease",
+          "&:hover": {
+            backgroundColor: (theme) =>
+              alpha(theme.palette.background.paper, 0.5),
+            transition: "all 0.2s ease",
+          },
+
+          // on hover get the 2nd child and then the 1st child of that
+          "&:hover > :nth-child(2)": {
+            "& > :nth-child(1)": {
+              opacity: 1,
+              transition: "all 0.2s ease-in",
+            },
+          },
         }}
+        onClick={(e) => {
+          if (onClick) onClick(e);
+        }}
+        onContextMenu={handleContextMenu}
       >
         <Box
           sx={{
-            width: "100%",
+            width: "5%",
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "center",
+            alignSelf: "center",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
           }}
         >
+          {!selectMode && (
+            <Typography
+              sx={{
+                fontSize: "1.25rem",
+                fontWeight: "bold",
+                color: (theme) => theme.palette.text.primary,
+                textAlign: "center",
+              }}
+            >
+              {item.index}
+            </Typography>
+          )}
+
+          {selectMode && (
+            <Checkbox
+              checked={selected}
+              onChange={() => {
+                if (setSelected) setSelected(!selected);
+              }}
+            />
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            width: "20%",
+            borderRadius: "8px",
+            aspectRatio: "16/9",
+            backgroundImage: `url(${getTranscodeImageURL(
+              `${item.thumb}?X-Plex-Token=${localStorage.getItem(
+                "accessToken"
+              )}`,
+              380,
+              214
+            )})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundBlendMode: "darken",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            transition: "all 0.3s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            position: "relative",
+            boxShadow: (theme) =>
+              `0 4px 6px -1px ${alpha(theme.palette.common.black, 0.2)}`,
+          }}
+        >
+          <PlayArrowRounded
+            sx={{
+              color: "#FFFFFF",
+              fontSize: "400%",
+              m: "auto",
+              opacity: 0,
+              backgroundColor: "#00000088",
+              borderRadius: "50%",
+              transition: "all 0.3s ease-out",
+            }}
+          />
+
+          {(item.viewOffset || (item.viewCount && item.viewCount >= 1)) && (
+            <LinearProgress
+              value={
+                item.viewOffset ? (item.viewOffset / item.duration) * 100 : 100
+              }
+              variant="determinate"
+              sx={{
+                width: "100%",
+                height: "4px",
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.common.black, 0.5),
+
+                position: "absolute",
+                bottom: 0,
+                "& .MuiLinearProgress-bar": {
+                  backgroundColor: (theme) => theme.palette.primary.main,
+                },
+              }}
+            />
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            width: "70%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            ml: 0.5,
+          }}
+        >
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                color: (theme) => theme.palette.text.primary,
+                // make it so the text doesnt resize the parent nor overflow max 3 rows
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical",
+                maxWidth: "80%",
+              }}
+            >
+              {item.title}
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 1,
+                color: (theme) => theme.palette.text.secondary,
+              }}
+            >
+              {getMinutes(item.duration)} Min.
+            </Box>
+          </Box>
+
           <Typography
             sx={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              color: "#FFFFFF",
+              fontSize: "medium",
+              fontWeight: "light",
+              color: (theme) => theme.palette.text.secondary,
+              mt: 0.5,
               // make it so the text doesnt resize the parent nor overflow max 3 rows
               overflow: "hidden",
               textOverflow: "ellipsis",
               display: "-webkit-box",
-              WebkitLineClamp: 1,
+              WebkitLineClamp: 3,
               WebkitBoxOrient: "vertical",
-              maxWidth: "80%",
             }}
+            title={item.summary}
           >
-            {item.title}
+            {item.summary}
           </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: 1,
-            }}
-          >
-            {getMinutes(item.duration)} Min.
-          </Box>
         </Box>
-
-        <Typography
-          sx={{
-            fontSize: "medium",
-            fontWeight: "light",
-            color: "#FFFFFF",
-            opacity: 0.7,
-            mt: -0.5,
-            // make it so the text doesnt resize the parent nor overflow max 3 rows
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: "vertical",
-          }}
-          title={item.summary}
-        >
-          {item.summary}
-        </Typography>
       </Box>
-    </Box>
+    </>
   );
 }
 
@@ -1477,21 +2161,39 @@ function TabButton({
   return (
     <Typography
       sx={{
-        fontSize: "1.5rem",
+        fontSize: "1.25rem",
         fontWeight: "bold",
         textTransform: "uppercase",
         letterSpacing: "0.1em",
-        color: selected ? "#AAAAAA" : "#333333",
-
+        color: selected
+          ? (theme) => theme.palette.primary.main
+          : (theme) => theme.palette.text.disabled,
         cursor: "pointer",
         userSelect: "none",
+        position: "relative",
+        pb: 0.5,
 
-        "&:hover": {
-          color: "#CCCCCC",
-          transition: "all 0.5s ease-in-out",
+        "&:after": {
+          content: '""',
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: selected ? "100%" : "0%",
+          height: "2px",
+          backgroundColor: (theme) => theme.palette.primary.main,
+          transition: "all 0.3s ease",
         },
 
-        transition: "all 0.75s ease-in-out",
+        "&:hover": {
+          color: (theme) =>
+            selected ? theme.palette.primary.main : theme.palette.text.primary,
+
+          "&:after": {
+            width: "100%",
+          },
+        },
+
+        transition: "all 0.3s ease",
       }}
       onClick={onClick}
     >
