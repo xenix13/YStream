@@ -1,6 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import express from 'express';
-import http from 'http';
 import https from 'https';
 import { Server as SocketIOServer } from 'socket.io';
 import { PerPlexed } from './types';
@@ -8,7 +7,9 @@ import { randomBytes } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { CheckPlexUser } from './common/plex';
 import fs from 'fs';
+import { Bonjour } from 'bonjour-service'
 
+ 
 /* 
  * ENVIRONMENT VARIABLES
     *
@@ -29,7 +30,19 @@ const status: PerPlexed.Status = {
 
 const app = express();
 const prisma = new PrismaClient();
+const instance = new Bonjour()
 
+instance.publish({
+    name: 'Nevu',
+    type: 'nevu',
+    port: parseInt(process.env.PORT || '3000'),
+    protocol: 'tcp',
+    txt: {
+        deploymentID,
+        version: '1.0.0',
+        plexServer: process.env.PLEX_SERVER,
+    }
+})
 
 app.use(express.json());
 
@@ -303,5 +316,3 @@ let io = (process.env.DISABLE_NEVU_SYNC === 'true') ? null : new SocketIOServer(
 export { app, server, io, deploymentID, prisma };
 
 import './common/sync';
-import { features } from 'process';import { readFileSync } from 'fs';
-
