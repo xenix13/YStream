@@ -151,7 +151,7 @@ function Watch() {
   };
 
   const [url, setURL] = useState<string>("");
-  const getUrl = `${getBackendURL()}/mediaproxy/start.mpd?${queryBuilder({
+  const getUrl = `${getBackendURL()}/dynproxy/video/:/transcode/universal/start.mpd?${queryBuilder({
     ...getStreamProps(itemID as string, {
       ...(quality.bitrate && {
         maxVideoBitrate: quality
@@ -1685,9 +1685,7 @@ function Watch() {
                             return getTranscodeImageURL(
                               `/library/parts/${
                                 metadata.Media[0].Part[0].id
-                              }/indexes/sd/${value}?X-Plex-Token=${
-                                localStorage.getItem("accessToken") as string
-                              }`,
+                              }/indexes/sd/${value}`,
                               240,
                               135
                             );

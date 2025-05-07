@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { CheckPlexUser } from './common/plex';
 import fs from 'fs';
 import { Bonjour } from 'bonjour-service'
+import httpProxy from 'http-proxy';
 
 
 /* 
@@ -338,113 +339,11 @@ app.get('/proxy', async (req, res) => {
     });
 });
 
-app.get('/imageproxy', (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-
-    const { url, width, height, token: plextoken } = req.query;
-
-    if (!url || !width || !height || !plextoken) return res.status(400).send('Bad request');
-
-    const config: AxiosRequestConfig = {
-        url: `${process.env.PLEX_SERVER}/photo/:/transcode`,
-        method: 'GET',
-        params: {
-            url,
-            width,
-            height,
-            minSize: 1,
-            upscale: 1,
-            "X-Plex-Token": plextoken,
-        },
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0',
-            'X-Fowarded-For': ip,
-        },
-        ...(process.env.DISABLE_TLS_VERIFY === "true" && {
-            httpsAgent: noVerifyHttpsAgent
-        }),
-        responseType: 'stream'
-    };
-
-    axios(config)
-        .then((response) => {
-            res.set('Content-Type', response.headers['content-type']);
-            res.set('Content-Length', response.headers['content-length']);
-            // res.set('Cache-Control', 'public, max-age=31536000');
-            response.data.pipe(res);
-        })
-        .catch((error) => {
-            res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
-        });
-});
-
-app.get('/mediaproxy/*', (req, res) => {
-    const url = req.url.split('/mediaproxy/')[1];
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-
-    if (!url) return res.status(400).send('Bad request');
-    
-    const fullUrl = `${process.env.PLEX_SERVER}/video/:/transcode/universal/${url}`;
-    
-    // First, send a HEAD request to get content type without fetching data
-    axios.head(fullUrl, {
-        params: req.query,
-        headers: {
-            ...req.headers,
-            'x-forwarded-for': ip,
-        },
-        ...(process.env.DISABLE_TLS_VERIFY === "true" && {
-            httpsAgent: noVerifyHttpsAgent
-        })
-    })
-    .then((headResponse) => {
-        const contentType = headResponse.headers['content-type'] || '';
-        const isTextBased = /text|json|xml|javascript|css/i.test(contentType);
-        
-        // Now make the actual request with appropriate responseType
-        return axios.get(fullUrl, {
-            params: req.query,
-            headers: {
-                ...req.headers,
-                'x-forwarded-for': ip,
-            },
-            ...(process.env.DISABLE_TLS_VERIFY === "true" && {
-                httpsAgent: noVerifyHttpsAgent
-            }),
-            responseType: isTextBased ? 'arraybuffer' : 'stream'
-        });
-    })
-    .then((response) => {
-        res.set('Content-Type', response.headers['content-type']);
-        res.set('Content-Length', response.headers['content-length']);
-        // res.set('Cache-Control', 'public, max-age=31536000');
-        
-        if (response.data instanceof Buffer) {
-            // If it's a buffer (arraybuffer response)
-            res.status(response.status).send(response.data);
-        } else {
-            // If it's a stream
-            response.data.pipe(res);
-        }
-    })
-    .catch((error) => {
-        res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
-    });
-})
-
 app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
     res.header('Access-Control-Allow-Headers', '*');
     res.send();
 });
-
-app.use((req, res, next) => {
-    if (req.url.startsWith('/socket.io')) return next();
-    res.sendFile('index.html', { root: 'www' });
-});
-
 const server = app.listen(3000, () => {
     console.log('Server started on http://localhost:3000');
 });
@@ -453,6 +352,27 @@ let io = (process.env.DISABLE_NEVU_SYNC === 'true') ? null : new SocketIOServer(
     cors: {
         origin: '*',
     },
+});
+
+const proxy = httpProxy.createProxyServer({
+    ws: true,
+    agent: process.env.DISABLE_TLS_VERIFY === "true" ? noVerifyHttpsAgent : undefined,
+});
+
+// add middleware to only listen on /dynproxy
+app.use('/dynproxy/*', (req, res) => {
+    const url = req.originalUrl.split('/dynproxy')[1];
+    if (!url) return res.status(400).send('Bad request');
+
+    proxy.web(req, res, { target: `${process.env.PLEX_SERVER}${url}` }, (err) => {
+        console.error('Proxy error:', err);
+        res.status(500).send('Proxy error');
+    });
+});
+
+app.use((req, res, next) => {
+    if (req.url.startsWith('/socket.io')) return next();
+    res.sendFile('index.html', { root: 'www' });
 });
 
 export { app, server, io, deploymentID, prisma };

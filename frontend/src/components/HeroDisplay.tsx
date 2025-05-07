@@ -24,10 +24,8 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
     usePreviewPlayer();
 
   const previewVidURL = item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
-    ? `${getBackendURL()}/proxy?${
+    ? `${getBackendURL()}/dynproxy${item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split("?")[0]}?${
         queryBuilder({
-          url: item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split("?")[0],
-          method: "GET",
           "X-Plex-Token": localStorage.getItem("accessToken"),
           ...Object.fromEntries(new URL("http://localhost:3000" + item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()),
         })

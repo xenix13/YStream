@@ -416,9 +416,7 @@ function MovieItem({
               data.Extras?.Metadata?.[0]?.Media?.[0]?.Part[0]?.key;
             if (!mediaURL) return;
             setPreviewPlaybackState({
-              url: `${getBackendURL()}/proxy?${queryBuilder({
-                url: mediaURL.split("?")[0],
-                method: "GET",
+              url: `${getBackendURL()}/dynproxy${mediaURL.split("?")[0]}?${queryBuilder({
                 "X-Plex-Token": localStorage.getItem("accessToken"),
                 ...Object.fromEntries(
                   new URL("http://localhost:3000" + mediaURL).searchParams.entries()

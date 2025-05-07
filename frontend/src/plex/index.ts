@@ -214,11 +214,11 @@ export async function getPlayQueue(uri: string): Promise<Plex.Metadata[]> {
  * @returns The URL for the transcoded image.
  */
 export function getTranscodeImageURL(url: string, width: number, height: number) {
-    return `${getBackendURL()}/imageproxy?${queryBuilder({
+    return `${getBackendURL()}/dynproxy/photo/:/transcode?${queryBuilder({
         width,
         height,
         url,
-        token: localStorage.getItem("accessToken") as string,
+        "X-Plex-Token": localStorage.getItem("accessToken") as string,
     })}`;
 }
 

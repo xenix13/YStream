@@ -129,12 +129,15 @@ function MetaScreen() {
       return;
 
     setPreviewVidURL(
-      `${getBackendURL()}/proxy?${queryBuilder({
-        url: data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split("?")[0],
-        method: "GET",
+      `${getBackendURL()}/dynproxy${data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split(
+        "?"
+      )[0]}?${queryBuilder({
         "X-Plex-Token": localStorage.getItem("accessToken"),
         ...Object.fromEntries(
-          new URL("http://localhost:3000" + data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()
+          new URL(
+            "http://localhost:3000" +
+              data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
+          ).searchParams.entries()
         ),
       })}`
     );
@@ -2034,9 +2037,7 @@ function EpisodeItem({
             borderRadius: "8px",
             aspectRatio: "16/9",
             backgroundImage: `url(${getTranscodeImageURL(
-              `${item.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
+              item.thumb,
               380,
               214
             )})`,
