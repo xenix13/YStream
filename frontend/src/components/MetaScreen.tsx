@@ -134,7 +134,7 @@ function MetaScreen() {
         method: "GET",
         "X-Plex-Token": localStorage.getItem("accessToken"),
         ...Object.fromEntries(
-          new URL(getBackendURL() + data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()
+          new URL("http://localhost:3000" + data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()
         ),
       })}`
     );

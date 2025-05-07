@@ -421,7 +421,7 @@ function MovieItem({
                 method: "GET",
                 "X-Plex-Token": localStorage.getItem("accessToken"),
                 ...Object.fromEntries(
-                  new URL(getBackendURL() + mediaURL).searchParams.entries()
+                  new URL("http://localhost:3000" + mediaURL).searchParams.entries()
                 ),
               })}`,
               playing: true,

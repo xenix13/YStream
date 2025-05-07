@@ -29,7 +29,7 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
           url: item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split("?")[0],
           method: "GET",
           "X-Plex-Token": localStorage.getItem("accessToken"),
-          ...Object.fromEntries(new URL(getBackendURL() + item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()),
+          ...Object.fromEntries(new URL("http://localhost:3000" + item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()),
         })
       }`
     : null;
