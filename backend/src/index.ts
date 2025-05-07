@@ -46,6 +46,10 @@ instance.publish({
 
 app.use(express.json());
 
+const noVerifyHttpsAgent = new https.Agent({
+    rejectUnauthorized: false
+});
+
 (async () => {
     const packageJson = fs.readFileSync('package.json', 'utf-8');
     const packageJsonParsed = JSON.parse(packageJson);
@@ -252,7 +256,7 @@ app.use(express.static('www'));
 
 app.post('/proxy', (req, res) => {
     const { url, method, headers, data } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     // the url must start with a / to prevent the server from making requests to external servers
     if (!url || !url.startsWith('/')) return res.status(400).send('Invalid URL');
@@ -275,25 +279,67 @@ app.post('/proxy', (req, res) => {
         },
         data,
         ...(process.env.DISABLE_TLS_VERIFY === "true" && {
-            httpsAgent: new https.Agent({
-                rejectUnauthorized: false
-            })
+            httpsAgent: noVerifyHttpsAgent
         })
     };
 
-    if (process.env.DISABLE_REQUEST_LOGGING !== "true") console.log(`PROXY [${new Date().toISOString()}] [${ip}] [${method}] [${url}]`)
-
     axios(config)
         .then((response) => {
-            res.send(response.data);
+            res.set('Content-Type', response.headers['content-type']);
+            res.set('Content-Length', response.headers['content-length']);
+            // res.set('Cache-Control', 'public, max-age=31536000');
+            res.status(response.status).send(response.data);
         })
         .catch((error) => {
             res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
         });
 });
 
+app.get('/proxy', async (req, res) => {
+    const { url, method, ...params } = req.query;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // the url must start with a / to prevent the server from making requests to external servers
+    if (!url || typeof url !== "string" || !url.startsWith('/')) return res.status(400).send('Invalid URL');
+
+    // check that the url doesn't include any harmful characters that could be used for directory traversal
+    if (url.match(/\.\./)) return res.status(400).send('Invalid URL');
+
+    // the method must be one of the allowed methods [GET, POST, PUT]
+    if (!method || typeof method !== "string" || !['GET', 'POST', 'PUT'].includes(method)) return res.status(400).send('Invalid method');
+
+    // remove url and method from params
+    const { url: _, method: __, ...queryParams } = req.query;
+
+    const config: AxiosRequestConfig = {
+        url: `${process.env.PLEX_SERVER}${url}`,
+        method,
+        headers: {
+            ...req.headers,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0',
+            'X-Fowarded-For': ip,
+        },
+        params: queryParams,
+        ...(process.env.DISABLE_TLS_VERIFY === "true" && {
+            httpsAgent: noVerifyHttpsAgent
+        }),
+        responseType: 'stream'
+    };
+
+    axios(config).then((response) => {
+        res.set('Content-Type', response.headers['content-type']);
+        res.set('Content-Length', response.headers['content-length']);
+        // res.set('Cache-Control', 'public, max-age=31536000');
+        response.data.pipe(res);
+    }).catch((error) => {
+        res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
+    });
+});
+
 app.get('/imageproxy', (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     const { url, width, height, token: plextoken } = req.query;
 
@@ -316,27 +362,77 @@ app.get('/imageproxy', (req, res) => {
             'User-Agent': 'Mozilla/5.0',
             'X-Fowarded-For': ip,
         },
-        responseType: 'arraybuffer',
         ...(process.env.DISABLE_TLS_VERIFY === "true" && {
-            httpsAgent: new https.Agent({
-                rejectUnauthorized: false
-            })
-        })
+            httpsAgent: noVerifyHttpsAgent
+        }),
+        responseType: 'stream'
     };
-
-    if (process.env.DISABLE_REQUEST_LOGGING !== "true") console.log(`IMAGEPROXY [${new Date().toISOString()}] [${ip}] [${url}]`)
 
     axios(config)
         .then((response) => {
             res.set('Content-Type', response.headers['content-type']);
             res.set('Content-Length', response.headers['content-length']);
             // res.set('Cache-Control', 'public, max-age=31536000');
-            res.send(response.data);
+            response.data.pipe(res);
         })
         .catch((error) => {
             res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
         });
 });
+
+app.get('/mediaproxy/*', (req, res) => {
+    const url = req.url.split('/mediaproxy/')[1];
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    if (!url) return res.status(400).send('Bad request');
+    
+    const fullUrl = `${process.env.PLEX_SERVER}/video/:/transcode/universal/${url}`;
+    
+    // First, send a HEAD request to get content type without fetching data
+    axios.head(fullUrl, {
+        params: req.query,
+        headers: {
+            ...req.headers,
+            'x-forwarded-for': ip,
+        },
+        ...(process.env.DISABLE_TLS_VERIFY === "true" && {
+            httpsAgent: noVerifyHttpsAgent
+        })
+    })
+    .then((headResponse) => {
+        const contentType = headResponse.headers['content-type'] || '';
+        const isTextBased = /text|json|xml|javascript|css/i.test(contentType);
+        
+        // Now make the actual request with appropriate responseType
+        return axios.get(fullUrl, {
+            params: req.query,
+            headers: {
+                ...req.headers,
+                'x-forwarded-for': ip,
+            },
+            ...(process.env.DISABLE_TLS_VERIFY === "true" && {
+                httpsAgent: noVerifyHttpsAgent
+            }),
+            responseType: isTextBased ? 'arraybuffer' : 'stream'
+        });
+    })
+    .then((response) => {
+        res.set('Content-Type', response.headers['content-type']);
+        res.set('Content-Length', response.headers['content-length']);
+        // res.set('Cache-Control', 'public, max-age=31536000');
+        
+        if (response.data instanceof Buffer) {
+            // If it's a buffer (arraybuffer response)
+            res.status(response.status).send(response.data);
+        } else {
+            // If it's a stream
+            response.data.pipe(res);
+        }
+    })
+    .catch((error) => {
+        res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
+    });
+})
 
 app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');

@@ -12,6 +12,9 @@ import { usePreviewPlayer } from "../states/PreviewPlayerState";
 import ReactPlayer from "react-player";
 import { useBigReader } from "./BigReader";
 import { WatchListButton } from "./MovieItem";
+import { getBackendURL } from "../backendURL";
+import { queryBuilder } from "../plex/QuickFunctions";
+import { getTranscodeImageURL } from "../plex";
 
 function HeroDisplay({ item }: { item: Plex.Metadata }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,9 +24,14 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
     usePreviewPlayer();
 
   const previewVidURL = item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
-    ? `${localStorage.getItem("server")}${
-        item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
-      }&X-Plex-Token=${localStorage.getItem("accessToken")}`
+    ? `${getBackendURL()}/proxy?${
+        queryBuilder({
+          url: item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split("?")[0],
+          method: "GET",
+          "X-Plex-Token": localStorage.getItem("accessToken"),
+          ...Object.fromEntries(new URL(getBackendURL() + item?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()),
+        })
+      }`
     : null;
 
   const [previewVidPlaying, setPreviewVidPlaying] = useState<boolean>(false);
@@ -113,9 +121,11 @@ function HeroDisplay({ item }: { item: Plex.Metadata }) {
           flexDirection: "column",
           alignItems: "flex-start",
           justifyContent: "flex-end",
-          background: `linear-gradient(90deg, #000000AA, #000000AA), url(${localStorage.getItem(
-            "server"
-          )}${item.art}?X-Plex-Token=${localStorage.getItem("accessToken")})`,
+          background: `linear-gradient(90deg, #000000AA, #000000AA), url(${getTranscodeImageURL(
+            item?.art,
+            1920,
+            1080
+          )})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",

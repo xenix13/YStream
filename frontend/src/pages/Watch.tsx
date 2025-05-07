@@ -56,6 +56,7 @@ import { absoluteDifference } from "../common/NumberExtra";
 import WatchShowChildView from "../components/WatchShowChildView";
 import { useUserSettings } from "../states/UserSettingsState";
 import PlaybackNextEPButton from "../components/PlaybackNextEPButton";
+import { getBackendURL } from "../backendURL";
 
 let SessionID = "";
 export { SessionID };
@@ -150,9 +151,7 @@ function Watch() {
   };
 
   const [url, setURL] = useState<string>("");
-  const getUrl = `${localStorage.getItem(
-    "server"
-  )}/video/:/transcode/universal/start.mpd?${queryBuilder({
+  const getUrl = `${getBackendURL()}/mediaproxy/start.mpd?${queryBuilder({
     ...getStreamProps(itemID as string, {
       ...(quality.bitrate && {
         maxVideoBitrate: quality
@@ -1683,22 +1682,15 @@ function Watch() {
                               !metadata.Media[0].Part[0].indexes
                             )
                               return "";
-                            return `${localStorage.getItem(
-                              "server"
-                            )}/photo/:/transcode?${queryBuilder({
-                              width: "240",
-                              height: "135",
-                              minSize: "1",
-                              upscale: "1",
-                              url: `/library/parts/${
+                            return getTranscodeImageURL(
+                              `/library/parts/${
                                 metadata.Media[0].Part[0].id
                               }/indexes/sd/${value}?X-Plex-Token=${
                                 localStorage.getItem("accessToken") as string
                               }`,
-                              "X-Plex-Token": localStorage.getItem(
-                                "accessToken"
-                              ) as string,
-                            })}`;
+                              240,
+                              135
+                            );
                           }}
                         />
                       </Box>

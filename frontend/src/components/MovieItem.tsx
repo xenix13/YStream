@@ -40,6 +40,8 @@ import { create } from "zustand";
 import { usePreviewPlayer } from "../states/PreviewPlayerState";
 import ReactPlayer from "react-player";
 import { useConfirmModal } from "./ConfirmModal";
+import { getBackendURL } from "../backendURL";
+import { queryBuilder } from "../plex/QuickFunctions";
 
 interface MovieItemPreviewPlaybackState {
   url: string;
@@ -414,11 +416,14 @@ function MovieItem({
               data.Extras?.Metadata?.[0]?.Media?.[0]?.Part[0]?.key;
             if (!mediaURL) return;
             setPreviewPlaybackState({
-              url: `${localStorage.getItem(
-                "server"
-              )}${mediaURL}&X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
+              url: `${getBackendURL()}/proxy?${queryBuilder({
+                url: mediaURL.split("?")[0],
+                method: "GET",
+                "X-Plex-Token": localStorage.getItem("accessToken"),
+                ...Object.fromEntries(
+                  new URL(getBackendURL() + mediaURL).searchParams.entries()
+                ),
+              })}`,
               playing: true,
             });
           }, 1000);

@@ -3,9 +3,9 @@ import React, { useEffect } from "react";
 import {
   getAllLibraries,
   getLibraryDir,
-  getLibraryMedia,
   getLibraryMeta,
   getLibrarySecondary,
+  getTranscodeImageURL,
 } from "../plex";
 import { useNavigate } from "react-router-dom";
 import { shuffleArray } from "../common/ArrayExtra";
@@ -107,7 +107,10 @@ export default function Home() {
           {libraries
             ?.filter((e) => ["movie", "show"].includes(e.type || ""))
             .map((library) => (
-              <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2, xl: 2 }} key={library.key}>
+              <Grid
+                size={{ xs: 6, sm: 4, md: 3, lg: 2, xl: 2 }}
+                key={library.key}
+              >
                 <Box
                   sx={{
                     width: "100%",
@@ -122,7 +125,7 @@ export default function Home() {
                     cursor: "pointer",
                     boxShadow: (theme) => theme.shadows[1],
                     transition: "all 0.2s ease",
-                    
+
                     "&:hover": {
                       transform: "translateY(-4px) scale(1.02)",
                       boxShadow: (theme) => theme.shadows[3],
@@ -138,15 +141,17 @@ export default function Home() {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      backgroundImage: `url(${localStorage.getItem("server")}${
-                        library.art
-                      }?X-Plex-Token=${localStorage.getItem("accessToken")})`,
+                      backgroundImage: `url(${getTranscodeImageURL(
+                        library.art,
+                        1920,
+                        1080
+                      )})`,
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                       zIndex: -2,
                     }}
                   />
-                  
+
                   {/* Theme color overlay */}
                   <Box
                     className="overlay"
@@ -164,22 +169,22 @@ export default function Home() {
                       transition: "opacity 0.2s ease",
                     }}
                   />
-                  
-                  <Box sx={{ 
-                    display: "flex", 
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 1.5,
-                    textAlign: "center",
-                    p: 2
-                  }}>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 1.5,
+                      textAlign: "center",
+                      p: 2,
+                    }}
+                  >
                     <Avatar
                       variant="rounded"
-                      src={`${localStorage.getItem("server")}${
-                        library.thumb
-                      }?X-Plex-Token=${localStorage.getItem("accessToken")}`}
-                      sx={{ 
-                        width: 48, 
+                      src={`${getTranscodeImageURL(library.thumb, 48, 48)}`}
+                      sx={{
+                        width: 48,
                         height: 48,
                         boxShadow: (theme) => theme.shadows[2],
                       }}
@@ -217,7 +222,12 @@ export default function Home() {
           />
 
           {watchListCache && watchListCache.length > 0 && (
-            <MovieItemSlider title="Watchlist" data={watchListCache} plexTvSource={true} link="/plextv/watchlist" />
+            <MovieItemSlider
+              title="Watchlist"
+              data={watchListCache}
+              plexTvSource={true}
+              link="/plextv/watchlist"
+            />
           )}
 
           {featured &&
@@ -271,12 +281,10 @@ async function getRandomItem(libraries: Plex.Directory[]) {
   try {
     const library = libraries[Math.floor(Math.random() * libraries.length)];
 
-    const items = await getLibraryDir(
-      `/library/sections/${library.key}/all`, {
-        sort: "random:desc",
-        limit: 1
-      }
-    )
+    const items = await getLibraryDir(`/library/sections/${library.key}/all`, {
+      sort: "random:desc",
+      limit: 1,
+    });
 
     return items.Metadata?.[0] || null;
   } catch (error) {

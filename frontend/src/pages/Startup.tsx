@@ -109,12 +109,12 @@ function Startup() {
           reload = true;
         }
 
-        const currServer = localStorage.getItem("server");
+        // const currServer = localStorage.getItem("server");
 
-        if(config.PLEX_SERVER !== currServer) reload = true;
-        skipUpdates.current = false;
+        // if(config.PLEX_SERVER !== currServer) reload = true;
+        // skipUpdates.current = false;
 
-        localStorage.setItem("server", config.PLEX_SERVER);
+        // localStorage.setItem("server", config.PLEX_SERVER);
         localStorage.setItem("deploymentId", config.DEPLOYMENTID);
 
 

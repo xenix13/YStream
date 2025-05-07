@@ -39,7 +39,6 @@ import {
   CheckCircleOutlineRounded,
   StarRounded,
   StarOutlineRounded,
-  RecommendRounded,
   CheckBoxOutlineBlankRounded,
   CheckBoxRounded,
 } from "@mui/icons-material";
@@ -55,6 +54,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useConfirmModal } from "./ConfirmModal";
 import { PlexCommunity } from "../plex/plexCommunity";
 import moment from "moment";
+import { getBackendURL } from "../backendURL";
+import { queryBuilder } from "../plex/QuickFunctions";
 
 function MetaScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -128,9 +129,14 @@ function MetaScreen() {
       return;
 
     setPreviewVidURL(
-      `${localStorage.getItem("server")}${
-        data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
-      }&X-Plex-Token=${localStorage.getItem("accessToken")}`
+      `${getBackendURL()}/proxy?${queryBuilder({
+        url: data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split("?")[0],
+        method: "GET",
+        "X-Plex-Token": localStorage.getItem("accessToken"),
+        ...Object.fromEntries(
+          new URL(getBackendURL() + data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key).searchParams.entries()
+        ),
+      })}`
     );
 
     const timeout = setTimeout(() => {
@@ -285,9 +291,11 @@ function MetaScreen() {
             width: "100%",
             maxWidth: "100%",
             aspectRatio: "16/9",
-            backgroundImage: `url(${localStorage.getItem("server")}${
-              data?.art
-            }?X-Plex-Token=${localStorage.getItem("accessToken")})`,
+            backgroundImage: `url(${getTranscodeImageURL(
+              data?.art as string,
+              1920,
+              1080
+            )})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
