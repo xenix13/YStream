@@ -99,6 +99,7 @@ root.render(
           styleOverrides: {
             root: {
               height: "100vh",
+              zIndex: 200
             },
           },
         },

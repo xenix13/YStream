@@ -348,7 +348,7 @@ function MovieItem({
           "&:hover": {
             transform: "scale(1.08)",
             transition: "all 0.4s ease",
-            zIndex: 1000,
+            zIndex: 10,
             boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.3)",
             position: "relative",
             pb: "10px",
