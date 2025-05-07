@@ -1458,7 +1458,7 @@ function MetaPageReviews({ data }: { data: Plex.Metadata | undefined }) {
                       </Typography>
                       <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Rating
-                          value={review.reviewRating / 2}
+                          value={(review.reviewRating ?? review.rating) / 2}
                           precision={0.5}
                           size="small"
                           readOnly
