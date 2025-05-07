@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import React, { JSX, useContext, useEffect, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import {
   getLibraryMeta,
   getLibraryMetaChildren,
@@ -222,12 +222,15 @@ function MetaScreen() {
 
   const refetchEpisodes = () => {
     if (!data) return;
+
+    const season = data?.Children?.Metadata?.find((child) => child.index === selectedSeason);
+
     if (
       data?.type === "show" &&
-      data?.Children?.Metadata[selectedSeason]?.ratingKey
+      season?.ratingKey
     ) {
       getLibraryMetaChildren(
-        data?.Children?.Metadata[selectedSeason]?.ratingKey as string
+        season?.ratingKey as string
       ).then((res) => {
         setEpisodes(res);
       });
@@ -1107,7 +1110,7 @@ function MetaPage1({
                 onConfirm: async () => {
                   await Promise.all(
                     selectedEpisodes.map(async (episode) => {
-                      await setMediaPlayedStatus(true, episode.ratingKey);
+                      setMediaPlayedStatus(true, episode.ratingKey);
                     })
                   );
                   refetchEpisodes();
