@@ -165,7 +165,9 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                           <Typography
                             variant="body2"
                             fontWeight={
-                              selectedSeason === season.index ? "medium" : "normal"
+                              selectedSeason === season.index
+                                ? "medium"
+                                : "normal"
                             }
                           >
                             {season.title}
@@ -196,7 +198,9 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                       p: 2,
                     }}
                   >
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
                       {episodes
                         ?.filter(
                           (episode) => episode.parentIndex === selectedSeason
@@ -218,7 +222,10 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                               ...(episode.ratingKey !== item.ratingKey && {
                                 cursor: "pointer",
                                 "&:hover": {
-                                  bgcolor: alpha(theme.palette.action.hover, 0.1),
+                                  bgcolor: alpha(
+                                    theme.palette.action.hover,
+                                    0.1
+                                  ),
                                   "& .playIcon": {
                                     opacity: 1,
                                   },
@@ -245,9 +252,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                                   right: 0,
                                   bottom: 0,
                                   backgroundImage: `url(${getTranscodeImageURL(
-                                    `${episode.thumb}?X-Plex-Token=${localStorage.getItem(
-                                      "accessToken"
-                                    )}`,
+                                    episode.thumb,
                                     320,
                                     180
                                   )})`,
@@ -255,7 +260,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                                   backgroundPosition: "center",
                                 }}
                               />
-                              
+
                               <PlayArrowRounded
                                 className="playIcon"
                                 sx={{
@@ -272,12 +277,15 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
                                 }}
                               />
 
-                              {(episode.viewOffset || 
-                                (episode.viewCount && episode.viewCount >= 1)) && (
+                              {(episode.viewOffset ||
+                                (episode.viewCount &&
+                                  episode.viewCount >= 1)) && (
                                 <LinearProgress
                                   value={
                                     episode.viewOffset
-                                      ? (episode.viewOffset / episode.duration) * 100
+                                      ? (episode.viewOffset /
+                                          episode.duration) *
+                                        100
                                       : 100
                                   }
                                   variant="determinate"

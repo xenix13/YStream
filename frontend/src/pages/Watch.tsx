@@ -702,9 +702,7 @@ function Watch() {
         >
           <img
             src={`${getTranscodeImageURL(
-              `${metadata?.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
+              metadata?.thumb as string,
               1500,
               1500
             )}`}
@@ -2044,13 +2042,7 @@ function NextEPButton({ queue }: { queue?: Plex.Metadata[] }) {
               }}
             >
               <img
-                src={`${getTranscodeImageURL(
-                  `${queue[1].thumb}?X-Plex-Token=${localStorage.getItem(
-                    "accessToken"
-                  )}`,
-                  500,
-                  500
-                )}`}
+                src={`${getTranscodeImageURL(queue[1].thumb, 500, 500)}`}
                 alt=""
                 style={{
                   height: "100%",

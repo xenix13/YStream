@@ -9,13 +9,13 @@ import { CheckPlexUser } from './common/plex';
 import fs from 'fs';
 import { Bonjour } from 'bonjour-service'
 
- 
+
 /* 
  * ENVIRONMENT VARIABLES
     *
     * PLEX_SERVER: The URL of the Plex server that the frontend will connect to
-    * PROXY_PLEX_SERVER?: The URL of the Plex server to proxy requests to
-    * DISABLE_PROXY?: If set to true, the proxy will be disabled and all requests go directly to the Plex server from the frontend (NOT RECOMMENDED)
+    * PROXY_PLEX_SERVER?: (DEPRECATED) The URL of the Plex server to proxy requests to
+    * DISABLE_PROXY?: (DEPRECATED) If set to true, the proxy will be disabled and all requests go directly to the Plex server from the frontend (NOT RECOMMENDED)
     * DISABLE_TLS_VERIFY?: If set to true, the proxy will not check any https ssl certificates
     * DISABLE_NEVU_SYNC?: If set to true, NEVU sync (watch together) will be disabled
     * DISABLE_REQUEST_LOGGING?: If set to true, the server will not log any requests
@@ -50,11 +50,25 @@ app.use(express.json());
     const packageJson = fs.readFileSync('package.json', 'utf-8');
     const packageJsonParsed = JSON.parse(packageJson);
 
-    if(packageJsonParsed.version !== "1.0.0") {
+    if (packageJsonParsed.version !== "1.0.0") {
         status.error = true;
         status.message = 'PerPlexed is now NEVU! \nPlease change the docker image from "ipmake/perplexed" to "ipmake/nevu"';
         console.error('PerPlexed is now NEVU! \nPlease change the docker image from "ipmake/perplexed" to "ipmake/nevu"');
         return
+    }
+
+    if (process.env.PROXY_PLEX_SERVER) {
+        status.error = true;
+        status.message = 'PROXY_PLEX_SERVER environment variable is deprecated. \nPlease use PLEX_SERVER instead';
+        console.error('PROXY_PLEX_SERVER environment variable is deprecated. \nPlease use PLEX_SERVER instead');
+        return;
+    }
+
+    if (process.env.DISABLE_PROXY) {
+        status.error = true;
+        status.message = 'DISABLE_PROXY environment variable is deprecated. \nPlease remove it from your environment variables';
+        console.error('DISABLE_PROXY environment variable is deprecated. \nPlease remove it from your environment variables');
+        return;
     }
 
     if (!process.env.PLEX_SERVER) {
@@ -64,8 +78,6 @@ app.use(express.json());
         return;
     }
 
-    if (!process.env.PROXY_PLEX_SERVER && process.env.DISABLE_PROXY !== 'true') process.env.PROXY_PLEX_SERVER = process.env.PLEX_SERVER
-
     if (process.env.PLEX_SERVER) {
         // check if the PLEX_SERVER environment variable is a valid URL, the URL must not end with a /
         if (!process.env.PLEX_SERVER.match(/^https?:\/\/[^\/]+$/)) {
@@ -74,26 +86,16 @@ app.use(express.json());
             console.error('Invalid PLEX_SERVER environment variable. \nThe URL must start with http:// or https:// and must not end with a /');
             return;
         }
-    }
 
-    if (process.env.PROXY_PLEX_SERVER && process.env.DISABLE_PROXY !== 'true') {
-        // check if the PROXY_PLEX_SERVER environment variable is a valid URL, the URL must not end with a /
-        if (!process.env.PROXY_PLEX_SERVER.match(/^https?:\/\/[^\/]+$/)) {
-            status.error = true;
-            status.message = 'Invalid PROXY_PLEX_SERVER environment variable. \nThe URL must start with http:// or https:// and must not end with a /';
-            console.error('Invalid PROXY_PLEX_SERVER environment variable. \nThe URL must start with http:// or https:// and must not end with a /');
-            return;
-        }
-
-        // check whether the PROXY_PLEX_SERVER is reachable
+        // check whether the PLEX_SERVER is reachable
         try {
-            await axios.get(`${process.env.PROXY_PLEX_SERVER}/identity`, {
+            await axios.get(`${process.env.PLEX_SERVER}/identity`, {
                 timeout: 5000,
             });
         } catch (error) {
             status.error = true;
-            status.message = 'Proxy cannot reach PROXY_PLEX_SERVER';
-            console.error('Proxy cannot reach PROXY_PLEX_SERVER');
+            status.message = 'Proxy cannot reach PLEX_SERVER';
+            console.error('Proxy cannot reach PLEX_SERVER');
             return;
         }
     }
@@ -103,7 +105,7 @@ app.use(express.json());
     //     let checkAllows = false;
     //     const fetchStatus = async () => {
     //         try {
-    //             const res = await axios.get(`${process.env.PROXY_PLEX_SERVER}/`, {
+    //             const res = await axios.get(`${process.env.PLEX_SERVER}/`, {
     //                 timeout: 2500,
     //             });
 
@@ -139,7 +141,7 @@ app.use(express.json());
     // }
 
 
-    if(status.error) return;
+    if (status.error) return;
     status.ready = true;
     status.message = 'OK';
 })();
@@ -168,10 +170,10 @@ app.get('/config', (req, res) => {
 });
 
 app.get('/user/options', async (req, res) => {
-    if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
+    if (!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
 
     const user = await CheckPlexUser(req.headers['x-plex-token'] as string);
-    if(!user) return res.status(401).send('Unauthorized user');
+    if (!user) return res.status(401).send('Unauthorized user');
 
     const options = await prisma.userOption.findMany({
         where: {
@@ -182,19 +184,19 @@ app.get('/user/options', async (req, res) => {
         console.log(err);
         return null;
     });
-    if(!options) return;
+    if (!options) return;
 
     res.send(options);
 });
 
 app.get('/user/options/:key', async (req, res) => {
-    if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
+    if (!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
 
     const user = await CheckPlexUser(req.headers['x-plex-token'] as string);
-    if(!user) return res.status(401).send('Unauthorized user');
+    if (!user) return res.status(401).send('Unauthorized user');
 
     const { key } = req.params;
-    if(!key) return res.status(400).send('Bad request');
+    if (!key) return res.status(400).send('Bad request');
 
     const option = await prisma.userOption.findFirst({
         where: {
@@ -206,20 +208,20 @@ app.get('/user/options/:key', async (req, res) => {
         console.log(err);
         return null;
     });
-    if(!option) return res.status(404).send('Option not found');
+    if (!option) return res.status(404).send('Option not found');
     res.send(option);
 });
-    
+
 
 app.post('/user/options', async (req, res) => {
-    if(!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
+    if (!req.headers['x-plex-token']) return res.status(401).send('Unauthorized');
 
     const user = await CheckPlexUser(req.headers['x-plex-token'] as string);
-    if(!user) return res.status(401).send('Unauthorized user');
+    if (!user) return res.status(401).send('Unauthorized user');
 
     const { key, value } = req.body;
 
-    if(!key || !value) return res.status(400).send('Bad request');
+    if (!key || !value) return res.status(400).send('Bad request');
 
     const option = await prisma.userOption.upsert({
         where: {
@@ -241,7 +243,7 @@ app.post('/user/options', async (req, res) => {
         console.log(err);
         return null;
     });
-    if(!option) return;
+    if (!option) return;
 
     res.send(option);
 });
@@ -249,8 +251,6 @@ app.post('/user/options', async (req, res) => {
 app.use(express.static('www'));
 
 app.post('/proxy', (req, res) => {
-    if (process.env.DISABLE_PROXY === 'true') return res.status(400).send('Proxy is disabled');
-
     const { url, method, headers, data } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
@@ -264,7 +264,7 @@ app.post('/proxy', (req, res) => {
     if (!method || !['GET', 'POST', 'PUT'].includes(method)) return res.status(400).send('Invalid method');
 
     const config: AxiosRequestConfig = {
-        url: `${process.env.PROXY_PLEX_SERVER}${url}`,
+        url: `${process.env.PLEX_SERVER}${url}`,
         method,
         headers: {
             ...headers,
@@ -281,10 +281,56 @@ app.post('/proxy', (req, res) => {
         })
     };
 
-    console.log(`PROXY [${new Date().toISOString()}] [${ip}] [${method}] [${url}]`)
+    if (process.env.DISABLE_REQUEST_LOGGING !== "true") console.log(`PROXY [${new Date().toISOString()}] [${ip}] [${method}] [${url}]`)
 
     axios(config)
         .then((response) => {
+            res.send(response.data);
+        })
+        .catch((error) => {
+            res.status(error.response?.status || 500).send(error.response?.data || 'Proxy error');
+        });
+});
+
+app.get('/imageproxy', (req, res) => {
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+    const { url, width, height, token: plextoken } = req.query;
+
+    if (!url || !width || !height || !plextoken) return res.status(400).send('Bad request');
+
+    const config: AxiosRequestConfig = {
+        url: `${process.env.PLEX_SERVER}/photo/:/transcode`,
+        method: 'GET',
+        params: {
+            url,
+            width,
+            height,
+            minSize: 1,
+            upscale: 1,
+            "X-Plex-Token": plextoken,
+        },
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0',
+            'X-Fowarded-For': ip,
+        },
+        responseType: 'arraybuffer',
+        ...(process.env.DISABLE_TLS_VERIFY === "true" && {
+            httpsAgent: new https.Agent({
+                rejectUnauthorized: false
+            })
+        })
+    };
+
+    if (process.env.DISABLE_REQUEST_LOGGING !== "true") console.log(`IMAGEPROXY [${new Date().toISOString()}] [${ip}] [${url}]`)
+
+    axios(config)
+        .then((response) => {
+            res.set('Content-Type', response.headers['content-type']);
+            res.set('Content-Length', response.headers['content-length']);
+            // res.set('Cache-Control', 'public, max-age=31536000');
             res.send(response.data);
         })
         .catch((error) => {
@@ -299,7 +345,7 @@ app.options('*', (req, res) => {
 });
 
 app.use((req, res, next) => {
-    if(req.url.startsWith('/socket.io')) return next();
+    if (req.url.startsWith('/socket.io')) return next();
     res.sendFile('index.html', { root: 'www' });
 });
 

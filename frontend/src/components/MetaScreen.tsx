@@ -101,14 +101,18 @@ function MetaScreen() {
 
     if (!mid) return;
     getLibraryMeta(mid).then((res) => {
-      const seasons = [...res.Children?.Metadata || []];
-      setSelectedSeason((res.OnDeck?.Metadata?.parentIndex ?? (seasons.sort((a, b) => {
-        // if the index is 0 put it at the end
-        if (a.index === 0) return 1;
-        if (b.index === 0) return -1;
-        // sort by index
-        return a.index - b.index;
-      })?.[0]?.index ?? 1)));
+      const seasons = [...(res.Children?.Metadata || [])];
+      setSelectedSeason(
+        res.OnDeck?.Metadata?.parentIndex ??
+          seasons.sort((a, b) => {
+            // if the index is 0 put it at the end
+            if (a.index === 0) return 1;
+            if (b.index === 0) return -1;
+            // sort by index
+            return a.index - b.index;
+          })?.[0]?.index ??
+          1
+      );
       setData(res);
       setLoading(false);
     });
@@ -203,17 +207,14 @@ function MetaScreen() {
     setEpisodes(null);
     if (!data) return;
 
-    const season = data?.Children?.Metadata?.find((child) => child.index === selectedSeason);
+    const season = data?.Children?.Metadata?.find(
+      (child) => child.index === selectedSeason
+    );
 
     console.log("Loading data for season", season);
 
-    if (
-      data?.type === "show" &&
-      season?.ratingKey
-    ) {
-      getLibraryMetaChildren(
-        season?.ratingKey as string
-      ).then((res) => {
+    if (data?.type === "show" && season?.ratingKey) {
+      getLibraryMetaChildren(season?.ratingKey as string).then((res) => {
         setEpisodes(res);
       });
     }
@@ -223,15 +224,12 @@ function MetaScreen() {
   const refetchEpisodes = () => {
     if (!data) return;
 
-    const season = data?.Children?.Metadata?.find((child) => child.index === selectedSeason);
+    const season = data?.Children?.Metadata?.find(
+      (child) => child.index === selectedSeason
+    );
 
-    if (
-      data?.type === "show" &&
-      season?.ratingKey
-    ) {
-      getLibraryMetaChildren(
-        season?.ratingKey as string
-      ).then((res) => {
+    if (data?.type === "show" && season?.ratingKey) {
+      getLibraryMetaChildren(season?.ratingKey as string).then((res) => {
         setEpisodes(res);
       });
     }
@@ -246,7 +244,6 @@ function MetaScreen() {
       </Backdrop>
     );
 
-  
   const selectedSeasonData = data?.Children?.Metadata.find(
     (season) => season.index === selectedSeason
   );
@@ -429,13 +426,7 @@ function MetaScreen() {
             }}
           >
             <img
-              src={`${getTranscodeImageURL(
-                `${data?.thumb}?X-Plex-Token=${localStorage.getItem(
-                  "accessToken"
-                )}`,
-                600,
-                900
-              )}`}
+              src={`${getTranscodeImageURL(data?.thumb as string, 600, 900)}`}
               alt={data?.title || ""}
               style={{
                 width: "100%",
@@ -1667,13 +1658,7 @@ function ActorItem({
           }}
         >
           <Avatar
-            src={`${getTranscodeImageURL(
-              `${role.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
-              200,
-              200
-            )}`}
+            src={`${getTranscodeImageURL(role.thumb, 200, 200)}`}
             sx={{
               width: "25%",
               height: "auto",
