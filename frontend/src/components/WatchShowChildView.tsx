@@ -13,6 +13,8 @@ import {
   Paper,
   Popper,
   Typography,
+  alpha,
+  useTheme,
 } from "@mui/material";
 import React, { useEffect } from "react";
 import { useState } from "react";
@@ -22,13 +24,11 @@ import { useNavigate } from "react-router-dom";
 
 function WatchShowChildView({ item }: { item: Plex.Metadata }) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-
   const [seasons, setSeasons] = useState<Plex.Metadata[] | null>(null);
   const [episodes, setEpisodes] = useState<Plex.Metadata[] | null>(null);
-
   const [selectedSeason, setSelectedSeason] = useState(item.parentIndex ?? 1);
-
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     setSeasons(null);
@@ -73,7 +73,7 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
           {
             name: "offset",
             options: {
-              offset: [0, 10],
+              offset: [0, 8],
             },
           },
           {
@@ -84,19 +84,20 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
               altBoundary: false,
               tether: false,
               rootBoundary: "viewport",
-              padding: 20,
+              padding: 16,
             },
           },
         ]}
       >
         {({ TransitionProps }) => (
-          <Fade {...TransitionProps} timeout={350}>
+          <Fade {...TransitionProps} timeout={300}>
             <Paper
+              elevation={6}
               sx={{
-                width: "auto",
-                height: "auto",
+                overflow: "hidden",
+                bgcolor: "#000",
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                 userSelect: "none",
-                bgcolor: "#121216",
               }}
             >
               <ClickAwayListener
@@ -107,338 +108,254 @@ function WatchShowChildView({ item }: { item: Plex.Metadata }) {
               >
                 <Box
                   sx={{
-                    backgroundColor: "background.paper",
-                    borderRadius: "5px",
-
                     display: "flex",
-                    flexDirection: "row",
-                    gap: "10px",
-                    overflow: "hidden",
+                    borderRadius: 1,
+                    maxHeight: "70vh",
+                    maxWidth: "90vw",
                   }}
                 >
-                  <Box
-                    sx={{
-                      display: (seasons?.length ?? 1) > 1 ? "flex" : "none",
-                      flexDirection: "column",
-                      width: "12vw",
-                      height: "40vh",
-                      overflow: "auto",
-
-                      maxHeight: "40vh",
-                      overflowY: "auto",
-
-                      bgcolor: "#121216",
-                    }}
-                  >
+                  {/* Season selector */}
+                  {(seasons?.length ?? 1) > 1 && (
                     <Box
                       sx={{
-                        py: "7px",
-                        px: "15px",
-                        width: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        width: 220,
+                        height: 480,
+                        overflow: "auto",
+                        borderRight: `1px solid ${theme.palette.divider}`,
                       }}
                     >
-                      <Typography
-                        sx={{
-                          color: "white",
-                          fontSize: "1.5vh",
-                          fontWeight: "bold",
-                          width: "100%",
-
-                          // clamp to one line
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {item.grandparentTitle}
-                      </Typography>
-                    </Box>
-
-                    <Divider variant="middle" />
-
-                    {seasons?.map((season) => (
-                      <Box
-                        key={season.ratingKey}
-                        sx={{
-                          cursor: "pointer",
-
-                          width: "100%",
-                          py: "7px",
-                          px: "15px",
-                          bgcolor: "#121216",
-
-                          display: "flex",
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-
-                          "&:hover": {
-                            background: (theme) => theme.palette.primary.dark,
-
-                            pr: "5px",
-                          },
-
-                          ...(selectedSeason === season.index && {
-                            background: (theme) => theme.palette.primary.dark,
-
-                            "& svg": {
-                              opacity: 0,
-                            },
-
-                            "& p": {
-                              fontWeight: "bold",
-                            },
-                          }),
-                          transition: "all 0.2s ease",
-                        }}
-                        onClick={() => setSelectedSeason(season.index ?? 1)}
-                      >
+                      <Box sx={{ p: 2, pb: 1 }}>
                         <Typography
+                          variant="subtitle1"
+                          noWrap
+                          fontWeight="medium"
+                        >
+                          {item.grandparentTitle}
+                        </Typography>
+                      </Box>
+
+                      <Divider />
+
+                      {seasons?.map((season) => (
+                        <Box
+                          key={season.ratingKey}
+                          onClick={() => setSelectedSeason(season.index ?? 1)}
                           sx={{
-                            color: "white",
-                            fontSize: "1.3vh",
+                            py: 1.5,
+                            px: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                            bgcolor:
+                              selectedSeason === season.index
+                                ? alpha(theme.palette.primary.main, 0.15)
+                                : "transparent",
+                            "&:hover": {
+                              bgcolor:
+                                selectedSeason === season.index
+                                  ? alpha(theme.palette.primary.main, 0.2)
+                                  : alpha(theme.palette.action.hover, 0.1),
+                            },
                           }}
                         >
-                          {season.title}
-                        </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight={
+                              selectedSeason === season.index ? "medium" : "normal"
+                            }
+                          >
+                            {season.title}
+                          </Typography>
 
-                        <ArrowBackIosNewRounded
-                          sx={{
-                            color: "white",
-                            fontSize: "1.3vh",
-                            transform: "rotate(180deg)",
-                            opacity: 1,
+                          {selectedSeason !== season.index && (
+                            <ArrowBackIosNewRounded
+                              sx={{
+                                fontSize: 14,
+                                transform: "rotate(180deg)",
+                                color: "text.secondary",
+                              }}
+                            />
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
 
-                            transition: "all 0.2s ease",
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Box>
-
+                  {/* Episodes list */}
                   <Box
                     sx={{
                       display: "flex",
                       flexDirection: "column",
-                      gap: "10px",
-                      width: "35vw",
-                      height: "40vh",
-                      maxHeight: "40vh",
+                      width: 600,
+                      height: 480,
                       overflowY: "auto",
-
-                      py: "10px",
-                      px: seasons?.length === 1 ? "10px" : "0px",
+                      p: 2,
                     }}
                   >
-                    {episodes
-                      ?.filter(
-                        (episode) => episode.parentIndex === selectedSeason
-                      )
-                      .map((episode) => (
-                        <Box
-                          key={episode.ratingKey}
-                          sx={{
-                            width: "100%",
-
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: "0px",
-
-                            ...(episode.ratingKey !== item.ratingKey && {
-                              cursor: "pointer",
-
-                              "&:hover > :nth-child(2)": {
-                                "& > :nth-child(1)": {
-                                  opacity: 1,
-                                  transition: "all 0.2s ease-in",
-                                },
-                              },
-                            }),
-                          }}
-                          onClick={() => {
-                            navigate(`/watch/${episode.ratingKey}`);
-                            setAnchorEl(null);
-                          }}
-                        >
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      {episodes
+                        ?.filter(
+                          (episode) => episode.parentIndex === selectedSeason
+                        )
+                        .map((episode) => (
                           <Box
-                            sx={{
-                              width: "5%",
-                              display: "none",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              alignSelf: "center",
+                            key={episode.ratingKey}
+                            onClick={() => {
+                              if (episode.ratingKey !== item.ratingKey) {
+                                navigate(`/watch/${episode.ratingKey}`);
+                                setAnchorEl(null);
+                              }
                             }}
-                          >
-                            <Typography
-                              sx={{
-                                fontSize: "1.25rem",
-                                fontWeight: "bold",
-                                color: "#FFFFFF",
-                                textAlign: "center",
-                              }}
-                            >
-                              {episode.index}
-                            </Typography>
-                          </Box>
-
-                          <Box
                             sx={{
-                              width: "30%",
-                              borderRadius: "5px",
-                              aspectRatio: "16/9",
-                              backgroundImage: `url(${getTranscodeImageURL(
-                                `${
-                                  episode.thumb
-                                }?X-Plex-Token=${localStorage.getItem(
-                                  "accessToken"
-                                )}`,
-                                380,
-                                214
-                              )})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                              backgroundBlendMode: "darken",
+                              display: "flex",
+                              borderRadius: 1,
                               overflow: "hidden",
-                              whiteSpace: "nowrap",
-                              clipPath: "inset(0px 0px -10px 0px)",
-                              transition: "all 0.5s ease",
-
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-start",
-                              justifyContent: "flex-start",
-
-                              position: "relative",
+                              transition: "all 0.2s",
+                              ...(episode.ratingKey !== item.ratingKey && {
+                                cursor: "pointer",
+                                "&:hover": {
+                                  bgcolor: alpha(theme.palette.action.hover, 0.1),
+                                  "& .playIcon": {
+                                    opacity: 1,
+                                  },
+                                },
+                              }),
                             }}
                           >
-                            <PlayArrowRounded
-                              sx={{
-                                color: "#FFFFFF",
-                                fontSize: "300%",
-                                m: "auto",
-                                opacity: 0,
-                                backgroundColor: "#00000088",
-                                borderRadius: "50%",
-
-                                transition: "all 0.5s ease-out",
-                              }}
-                            />
-
-                            {(episode.viewOffset ||
-                              (episode.viewCount &&
-                                episode.viewCount >= 1)) && (
-                              <LinearProgress
-                                value={
-                                  episode.viewOffset
-                                    ? (episode.viewOffset / episode.duration) *
-                                      100
-                                    : 100
-                                }
-                                variant="determinate"
-                                sx={{
-                                  width: "100%",
-                                  height: "5%",
-                                  backgroundColor: "#00000088",
-                                  borderRadius: "5px",
-
-                                  position: "absolute",
-                                  bottom: 0,
-                                }}
-                              />
-                            )}
-                          </Box>
-
-                          <Box
-                            sx={{
-                              width: "70%",
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-start",
-                              justifyContent: "flex-start",
-                              ml: 0.5,
-                              px: "10px",
-                            }}
-                          >
+                            {/* Episode thumbnail */}
                             <Box
                               sx={{
-                                width: "100%",
-                                display: "flex",
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "space-between",
+                                position: "relative",
+                                width: 160,
+                                aspectRatio: "16/9",
+                                flexShrink: 0,
+                                borderRadius: 1,
+                                overflow: "hidden",
                               }}
                             >
                               <Box
                                 sx={{
-                                  display: "flex",
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  justifyContent: "flex-start",
-                                  gap: 0.5,
-                                  width: "85%",
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  backgroundImage: `url(${getTranscodeImageURL(
+                                    `${episode.thumb}?X-Plex-Token=${localStorage.getItem(
+                                      "accessToken"
+                                    )}`,
+                                    320,
+                                    180
+                                  )})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
                                 }}
-                              >
-                                <Typography
-                                  sx={{
-                                    fontSize: "1.5vh",
-                                  }}
-                                >
-                                  {episode.index}
-                                </Typography>
-
-                                {"  -  "}
-
-                                <Typography
-                                  sx={{
-                                    fontSize: "1.5vh",
-                                    fontWeight: "bold",
-                                    color: "#FFFFFF",
-
-                                    whiteSpace: "nowrap",
-                                    maxWidth: "95%",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                  }}
-                                >
-                                  {episode.title}
-                                </Typography>
-                              </Box>
-
-                              <Box
+                              />
+                              
+                              <PlayArrowRounded
+                                className="playIcon"
                                 sx={{
-                                  fontSize: "1.3vh",
-                                  display: "flex",
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  justifyContent: "flex-start",
-                                  gap: 1,
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  transform: "translate(-50%, -50%)",
+                                  fontSize: 48,
+                                  color: "white",
+                                  opacity: 0,
+                                  transition: "opacity 0.2s",
+                                  backgroundColor: alpha("#000", 0.5),
+                                  borderRadius: "50%",
                                 }}
-                              >
-                                {getMinutes(episode.duration)} Min.
-                              </Box>
+                              />
+
+                              {(episode.viewOffset || 
+                                (episode.viewCount && episode.viewCount >= 1)) && (
+                                <LinearProgress
+                                  value={
+                                    episode.viewOffset
+                                      ? (episode.viewOffset / episode.duration) * 100
+                                      : 100
+                                  }
+                                  variant="determinate"
+                                  sx={{
+                                    position: "absolute",
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: 3,
+                                    bgcolor: alpha("#000", 0.5),
+                                  }}
+                                />
+                              )}
                             </Box>
 
-                            <Typography
-                              sx={{
-                                fontSize: "1.25vh",
-                                fontWeight: "light",
-                                color: "#FFFFFF",
-                                opacity: 0.7,
-                                // make it so the text doesnt resize the parent nor overflow max 3 rows
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 3,
-                                WebkitBoxOrient: "vertical",
-                              }}
-                              title={episode.summary}
-                            >
-                              {episode.summary}
-                            </Typography>
+                            {/* Episode details */}
+                            <Box sx={{ px: 2, py: 1, flex: 1 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  mb: 0.5,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                  >
+                                    {episode.index}
+                                  </Typography>
+                                  <Typography
+                                    color="text.secondary"
+                                    variant="body2"
+                                  >
+                                    •
+                                  </Typography>
+                                  <Typography
+                                    variant="subtitle2"
+                                    fontWeight="medium"
+                                    noWrap
+                                  >
+                                    {episode.title}
+                                  </Typography>
+                                </Box>
+
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ whiteSpace: "nowrap" }}
+                                >
+                                  {getMinutes(episode.duration)} min
+                                </Typography>
+                              </Box>
+
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical",
+                                }}
+                              >
+                                {episode.summary}
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                      ))}
+                        ))}
+                    </Box>
                   </Box>
                 </Box>
               </ClickAwayListener>
