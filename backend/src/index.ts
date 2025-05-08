@@ -367,7 +367,11 @@ let io = (process.env.DISABLE_NEVU_SYNC === 'true') ? null : new SocketIOServer(
 
 const proxy = httpProxy.createProxyServer({
     ws: true,
-    agent: process.env.DISABLE_TLS_VERIFY === "true" ? noVerifyHttpsAgent : undefined,
+    agent: noVerifyHttpsAgent,
+    autoRewrite: true,
+    cookieDomainRewrite: (new URL(process.env.PLEX_SERVER as string)).hostname,
+    changeOrigin: true,
+    secure: false,
 });
 
 
