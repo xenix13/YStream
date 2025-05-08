@@ -14,6 +14,7 @@ import {
 } from "../plex";
 import CenteredSpinner from "../components/CenteredSpinner";
 import {
+  alpha,
   Backdrop,
   Box,
   Button,
@@ -55,6 +56,7 @@ import { absoluteDifference } from "../common/NumberExtra";
 import WatchShowChildView from "../components/WatchShowChildView";
 import { useUserSettings } from "../states/UserSettingsState";
 import PlaybackNextEPButton from "../components/PlaybackNextEPButton";
+import { getBackendURL } from "../backendURL";
 
 let SessionID = "";
 export { SessionID };
@@ -149,9 +151,7 @@ function Watch() {
   };
 
   const [url, setURL] = useState<string>("");
-  const getUrl = `${localStorage.getItem(
-    "server"
-  )}/video/:/transcode/universal/start.mpd?${queryBuilder({
+  const getUrl = `${getBackendURL()}/dynproxy/video/:/transcode/universal/start.mpd?${queryBuilder({
     ...getStreamProps(itemID as string, {
       ...(quality.bitrate && {
         maxVideoBitrate: quality
@@ -701,9 +701,7 @@ function Watch() {
         >
           <img
             src={`${getTranscodeImageURL(
-              `${metadata?.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
+              metadata?.thumb as string,
               1500,
               1500
             )}`}
@@ -983,6 +981,7 @@ function Watch() {
             )}
           </Box>
         </Box>
+
         <Popover
           open={showTune}
           anchorEl={tuneButtonRef.current}
@@ -998,11 +997,23 @@ function Watch() {
             vertical: "bottom",
             horizontal: "center",
           }}
+          sx={{
+            "& .MuiPaper-root": {
+              overflow: "hidden",
+              borderRadius: 1,
+            },
+          }}
         >
-          <Box
+          <Paper
+            elevation={6}
             sx={{
               width: 350,
               height: "auto",
+              overflow: "hidden",
+              userSelect: "none",
+              bgcolor: "#000",
+              border: (theme) =>
+                `1px solid ${alpha(theme.palette.divider, 0.1)}`,
             }}
           >
             {tunePage === 0 && (
@@ -1040,17 +1051,17 @@ function Watch() {
                       alignItems: "center",
                       justifyContent: "flex-end",
                       width: "100%",
-                      height: "50px",
+                      height: 50,
                       px: 2,
-
                       userSelect: "none",
                       cursor: "pointer",
-
+                      transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: theme.palette.primary.dark,
-                        transition: "background-color 0.2s",
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.15
+                        ),
                       },
-                      transition: "background-color 0.5s",
                     }}
                     onClick={async () => {
                       if (!metadata.Media || !itemID) return;
@@ -1089,24 +1100,27 @@ function Watch() {
                       <CheckRounded
                         sx={{
                           mr: "auto",
+                          color: "primary.main",
                         }}
-                        fontSize="medium"
+                        fontSize="small"
                       />
                     )}
                     <Typography
+                      variant="body2"
                       sx={{
-                        fontSize: 14,
+                        display: "flex",
+                        alignItems: "center",
                       }}
                     >
-                      <strong
-                        style={{
-                          fontWeight: "normal",
-                          opacity: 0.5,
-                          marginRight: "4px",
+                      <Box
+                        component="span"
+                        sx={{
+                          opacity: 0.6,
+                          mr: 0.5,
                         }}
                       >
                         {qualityOption.extra}
-                      </strong>
+                      </Box>
                       {qualityOption.title}
                     </Typography>
                   </Box>
@@ -1131,24 +1145,20 @@ function Watch() {
                       alignItems: "center",
                       justifyContent: "flex-end",
                       width: "100%",
-                      height: "50px",
+                      height: 50,
                       px: 2,
-
                       userSelect: "none",
                       cursor: "pointer",
-
+                      transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: theme.palette.primary.dark,
-                        transition: "background-color 0.2s",
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.15
+                        ),
                       },
-                      transition: "background-color 0.5s",
                     }}
                     onClick={async () => {
                       if (!metadata.Media || !itemID) return;
-                      // await putAudioStream(
-                      //   metadata.Media[0].Part[0].id,
-                      //   stream.id
-                      // );
                       setTunePage(0);
                       await putAudioStream(
                         metadata.Media?.[0].Part[0].id ?? 0,
@@ -1183,21 +1193,17 @@ function Watch() {
                       sx={{
                         mr: "auto",
                         opacity: stream.selected ? 1 : 0,
+                        color: "primary.main",
                       }}
-                      fontSize="medium"
+                      fontSize="small"
                     />
                     <Typography
+                      variant="body2"
                       sx={{
-                        ml: "5px",
-                        fontSize: 16,
-
-                        // Only one line no wrap
                         textOverflow: "ellipsis",
                         overflow: "hidden",
-                        maxLines: 1,
-                        maxInlineSize: "100%",
-                        textWrap: "none",
                         whiteSpace: "nowrap",
+                        maxWidth: "calc(100% - 40px)",
                       }}
                     >
                       {stream.extendedDisplayTitle}
@@ -1221,21 +1227,17 @@ function Watch() {
                     alignItems: "center",
                     justifyContent: "flex-end",
                     width: "100%",
-                    height: "50px",
+                    height: 50,
                     px: 2,
-
                     userSelect: "none",
                     cursor: "pointer",
-
+                    transition: "all 0.2s ease",
                     "&:hover": {
-                      backgroundColor: theme.palette.primary.dark,
-                      transition: "background-color 0.2s",
+                      backgroundColor: alpha(theme.palette.primary.main, 0.15),
                     },
-                    transition: "background-color 0.5s",
                   }}
                   onClick={async () => {
                     if (!metadata.Media || !itemID) return;
-                    // await putSubtitleStream(metadata.Media[0].Part[0].id, 0);
                     setTunePage(0);
                     await putSubtitleStream(
                       metadata.Media?.[0].Part[0].id ?? 0,
@@ -1271,17 +1273,12 @@ function Watch() {
                     <CheckRounded
                       sx={{
                         mr: "auto",
+                        color: "primary.main",
                       }}
-                      fontSize="medium"
+                      fontSize="small"
                     />
                   )}
-                  <Typography
-                    sx={{
-                      fontSize: 16,
-                    }}
-                  >
-                    None
-                  </Typography>
+                  <Typography variant="body2">None</Typography>
                 </Box>
 
                 {metadata?.Media[0].Part[0].Stream.filter(
@@ -1292,26 +1289,22 @@ function Watch() {
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "flex-end",
+                      justifyContent: "space-between",
                       width: "100%",
-                      height: "50px",
+                      height: 50,
                       px: 2,
-
                       userSelect: "none",
                       cursor: "pointer",
-
+                      transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: theme.palette.primary.dark,
-                        transition: "background-color 0.2s",
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.15
+                        ),
                       },
-                      transition: "background-color 0.5s",
                     }}
                     onClick={async () => {
                       if (!metadata.Media || !itemID) return;
-                      // await putSubtitleStream(
-                      //   metadata.Media[0].Part[0].id,
-                      //   stream.id
-                      // );
                       setTunePage(0);
                       await putSubtitleStream(
                         metadata.Media?.[0].Part[0].id ?? 0,
@@ -1344,25 +1337,20 @@ function Watch() {
                   >
                     <CheckRounded
                       sx={{
-                        mr: "auto",
                         opacity: stream.selected ? 1 : 0,
+                        color: "primary.main",
                       }}
-                      fontSize="medium"
+                      fontSize="small"
                     />
 
                     <Typography
+                      variant="body2"
                       sx={{
-                        ml: "5px",
-                        fontSize: 16,
-                        width: "100%",
+                        ml: 1,
+                        flex: 1,
                         textAlign: "right",
-
-                        // Only one line no wrap
                         textOverflow: "ellipsis",
                         overflow: "hidden",
-                        maxLines: 1,
-                        maxInlineSize: "100%",
-                        textWrap: "none",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1372,7 +1360,7 @@ function Watch() {
                 ))}
               </>
             )}
-          </Box>
+          </Paper>
         </Popover>
         {(() => {
           if (!metadata) return <CenteredSpinner />;
@@ -1694,22 +1682,13 @@ function Watch() {
                               !metadata.Media[0].Part[0].indexes
                             )
                               return "";
-                            return `${localStorage.getItem(
-                              "server"
-                            )}/photo/:/transcode?${queryBuilder({
-                              width: "240",
-                              height: "135",
-                              minSize: "1",
-                              upscale: "1",
-                              url: `/library/parts/${
+                            return getTranscodeImageURL(
+                              `/library/parts/${
                                 metadata.Media[0].Part[0].id
-                              }/indexes/sd/${value}?X-Plex-Token=${
-                                localStorage.getItem("accessToken") as string
-                              }`,
-                              "X-Plex-Token": localStorage.getItem(
-                                "accessToken"
-                              ) as string,
-                            })}`;
+                              }/indexes/sd/${value}`,
+                              240,
+                              135
+                            );
                           }}
                         />
                       </Box>
@@ -2053,13 +2032,7 @@ function NextEPButton({ queue }: { queue?: Plex.Metadata[] }) {
               }}
             >
               <img
-                src={`${getTranscodeImageURL(
-                  `${queue[1].thumb}?X-Plex-Token=${localStorage.getItem(
-                    "accessToken"
-                  )}`,
-                  500,
-                  500
-                )}`}
+                src={`${getTranscodeImageURL(queue[1].thumb, 500, 500)}`}
                 alt=""
                 style={{
                   height: "100%",
@@ -2151,19 +2124,18 @@ function TuneSettingTab(
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "space-between",
         width: "100%",
-        height: "50px",
+        height: 50,
         px: 2,
-
+        py: 1.5,
         userSelect: "none",
         cursor: "pointer",
-
+        transition: "all 0.2s ease",
+        borderRadius: 0.5,
         "&:hover": {
-          backgroundColor: theme.palette.primary.dark,
-          transition: "background-color 0.2s",
+          backgroundColor: alpha(theme.palette.primary.main, 0.15),
         },
-        transition: "background-color 0.5s",
       }}
       onClick={() => {
         setTunePage(props.pageNum);
@@ -2171,14 +2143,17 @@ function TuneSettingTab(
     >
       <ArrowBackIosRounded
         sx={{
-          mr: "auto",
+          fontSize: 18,
+          color: "text.secondary",
         }}
-        fontSize="medium"
       />
       <Typography
+        variant="subtitle1"
         sx={{
-          fontSize: 18,
-          fontWeight: "bold",
+          fontWeight: "medium",
+          flex: 1,
+          textAlign: "right",
+          color: "text.primary",
         }}
       >
         {props.text}

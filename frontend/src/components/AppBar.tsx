@@ -609,9 +609,7 @@ function SearchBar() {
                 >
                   <img
                     src={`${getTranscodeImageURL(
-                      `${
-                        item.Metadata.thumb
-                      }?X-Plex-Token=${localStorage.getItem("accessToken")}`,
+                      item.Metadata.thumb,
                       100,
                       100
                     )}`}

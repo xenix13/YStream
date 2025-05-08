@@ -30,7 +30,7 @@ export const useUserSettings = create<UserSettingsState>((set) => ({
             value,
         }, {
             headers: {
-                'X-Plex-Token': localStorage.getItem("accessToken"),
+                'X-Plex-Token': localStorage.getItem("accAccessToken"),
             }
         }).then((res) => {
             // Handle response if needed
@@ -48,7 +48,7 @@ export const useUserSettings = create<UserSettingsState>((set) => ({
     fetchSettings: async () => {
         const settings = await axios.get(`${getBackendURL()}/user/options`, {
             headers: {
-                'X-Plex-Token': localStorage.getItem("accessToken"),
+                'X-Plex-Token': localStorage.getItem("accAccessToken"),
             }
         }).then((res) => {
             return res.data;

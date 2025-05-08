@@ -1,6 +1,7 @@
 import axios from "axios";
 import { authedGet, authedPost, authedPut, getIncludeProps, getXPlexProps, queryBuilder } from "./QuickFunctions";
 import './plex.d.ts'
+import { getBackendURL } from "../backendURL";
 
 export async function getAllLibraries(): Promise<Plex.LibarySection[]> {
     const res = await authedGet(`/library/sections`);
@@ -43,7 +44,7 @@ export async function getLibrarySecondary(key: string, directory: string): Promi
 }
 
 export async function getLibraryMeta(id: string): Promise<Plex.Metadata> {
-    if(!id) return {} as Plex.Metadata;
+    if (!id) return {} as Plex.Metadata;
     const res = await authedGet(`/library/metadata/${id}?${queryBuilder({
         ...getIncludeProps(),
         ...getXPlexProps()
@@ -213,13 +214,9 @@ export async function getPlayQueue(uri: string): Promise<Plex.Metadata[]> {
  * @returns The URL for the transcoded image.
  */
 export function getTranscodeImageURL(url: string, width: number, height: number) {
-    return `${localStorage.getItem(
-        "server"
-    )}/photo/:/transcode?${queryBuilder({
+    return `${getBackendURL()}/dynproxy/photo/:/transcode?${queryBuilder({
         width,
         height,
-        minSize: 1,
-        upscale: 1,
         url,
         "X-Plex-Token": localStorage.getItem("accessToken") as string,
     })}`;
@@ -316,7 +313,7 @@ export async function getSearch(query: string): Promise<Plex.SearchResult[]> {
  * @returns A promise that resolves when the request is complete.
  */
 export async function setMediaPlayedStatus(watched: boolean, ratingKey: string): Promise<void> {
-    if(watched) {
+    if (watched) {
         await authedGet(`/:/scrobble?${queryBuilder({
             key: ratingKey,
             identifier: "com.plexapp.plugins.library",
@@ -385,7 +382,7 @@ export async function getItemByGUID(guid: string): Promise<Plex.Metadata | null>
         "X-Plex-Token": localStorage.getItem("accessToken") as string
     })}`);
 
-    if(res.MediaContainer.Metadata?.[0]?.guid !== guid) return null;
+    if (res.MediaContainer.Metadata?.[0]?.guid !== guid) return null;
 
     return res.MediaContainer.Metadata?.[0];
 }

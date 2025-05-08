@@ -49,18 +49,8 @@ function MovieItemLegacy({
         aspectRatio: "16/9",
         backgroundColor: "#00000055",
         backgroundImage: ["episode"].includes(item.type)
-          ? `url(${getTranscodeImageURL(
-              `${item.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
-              1200,
-              680
-            )})`
-          : `url(${getTranscodeImageURL(
-              `${item.art}?X-Plex-Token=${localStorage.getItem("accessToken")}`,
-              1200,
-              680
-            )})`,
+          ? `url(${getTranscodeImageURL(item.thumb, 1200, 680)})`
+          : `url(${getTranscodeImageURL(item.art, 1200, 680)})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundBlendMode: "darken",

@@ -40,6 +40,8 @@ import { create } from "zustand";
 import { usePreviewPlayer } from "../states/PreviewPlayerState";
 import ReactPlayer from "react-player";
 import { useConfirmModal } from "./ConfirmModal";
+import { getBackendURL } from "../backendURL";
+import { queryBuilder } from "../plex/QuickFunctions";
 
 interface MovieItemPreviewPlaybackState {
   url: string;
@@ -348,7 +350,7 @@ function MovieItem({
           "&:hover": {
             transform: "scale(1.08)",
             transition: "all 0.4s ease",
-            zIndex: 1000,
+            zIndex: 10,
             boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.3)",
             position: "relative",
             pb: "10px",
@@ -414,11 +416,12 @@ function MovieItem({
               data.Extras?.Metadata?.[0]?.Media?.[0]?.Part[0]?.key;
             if (!mediaURL) return;
             setPreviewPlaybackState({
-              url: `${localStorage.getItem(
-                "server"
-              )}${mediaURL}&X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
+              url: `${getBackendURL()}/dynproxy${mediaURL.split("?")[0]}?${queryBuilder({
+                "X-Plex-Token": localStorage.getItem("accessToken"),
+                ...Object.fromEntries(
+                  new URL("http://localhost:3000" + mediaURL).searchParams.entries()
+                ),
+              })}`,
               playing: true,
             });
           }, 1000);
@@ -438,20 +441,8 @@ function MovieItem({
             aspectRatio: "16/9",
 
             backgroundImage: ["episode"].includes(item.type)
-              ? `url(${getTranscodeImageURL(
-                  `${item.thumb}?X-Plex-Token=${localStorage.getItem(
-                    "accessToken"
-                  )}`,
-                  1200,
-                  680
-                )})`
-              : `url(${getTranscodeImageURL(
-                  `${item.art}?X-Plex-Token=${localStorage.getItem(
-                    "accessToken"
-                  )}`,
-                  1200,
-                  680
-                )})`,
+              ? `url(${getTranscodeImageURL(item.thumb, 1200, 680)})`
+              : `url(${getTranscodeImageURL(item.art, 1200, 680)})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
 

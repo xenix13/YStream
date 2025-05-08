@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import React, { JSX, useContext, useEffect, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import {
   getLibraryMeta,
   getLibraryMetaChildren,
@@ -39,7 +39,6 @@ import {
   CheckCircleOutlineRounded,
   StarRounded,
   StarOutlineRounded,
-  RecommendRounded,
   CheckBoxOutlineBlankRounded,
   CheckBoxRounded,
 } from "@mui/icons-material";
@@ -55,6 +54,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useConfirmModal } from "./ConfirmModal";
 import { PlexCommunity } from "../plex/plexCommunity";
 import moment from "moment";
+import { getBackendURL } from "../backendURL";
+import { queryBuilder } from "../plex/QuickFunctions";
 
 function MetaScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -101,7 +102,18 @@ function MetaScreen() {
 
     if (!mid) return;
     getLibraryMeta(mid).then((res) => {
-      setSelectedSeason((res.OnDeck?.Metadata?.parentIndex ?? 1) - 1);
+      const seasons = [...(res.Children?.Metadata || [])];
+      setSelectedSeason(
+        res.OnDeck?.Metadata?.parentIndex ??
+          seasons.sort((a, b) => {
+            // if the index is 0 put it at the end
+            if (a.index === 0) return 1;
+            if (b.index === 0) return -1;
+            // sort by index
+            return a.index - b.index;
+          })?.[0]?.index ??
+          1
+      );
       setData(res);
       setLoading(false);
     });
@@ -117,9 +129,17 @@ function MetaScreen() {
       return;
 
     setPreviewVidURL(
-      `${localStorage.getItem("server")}${
-        data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
-      }&X-Plex-Token=${localStorage.getItem("accessToken")}`
+      `${getBackendURL()}/dynproxy${data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key.split(
+        "?"
+      )[0]}?${queryBuilder({
+        "X-Plex-Token": localStorage.getItem("accessToken"),
+        ...Object.fromEntries(
+          new URL(
+            "http://localhost:3000" +
+              data?.Extras?.Metadata?.[0]?.Media?.[0]?.Part?.[0]?.key
+          ).searchParams.entries()
+        ),
+      })}`
     );
 
     const timeout = setTimeout(() => {
@@ -195,13 +215,15 @@ function MetaScreen() {
   useEffect(() => {
     setEpisodes(null);
     if (!data) return;
-    if (
-      data?.type === "show" &&
-      data?.Children?.Metadata[selectedSeason]?.ratingKey
-    ) {
-      getLibraryMetaChildren(
-        data?.Children?.Metadata[selectedSeason]?.ratingKey as string
-      ).then((res) => {
+
+    const season = data?.Children?.Metadata?.find(
+      (child) => child.index === selectedSeason
+    );
+
+    console.log("Loading data for season", season);
+
+    if (data?.type === "show" && season?.ratingKey) {
+      getLibraryMetaChildren(season?.ratingKey as string).then((res) => {
         setEpisodes(res);
       });
     }
@@ -210,13 +232,13 @@ function MetaScreen() {
 
   const refetchEpisodes = () => {
     if (!data) return;
-    if (
-      data?.type === "show" &&
-      data?.Children?.Metadata[selectedSeason]?.ratingKey
-    ) {
-      getLibraryMetaChildren(
-        data?.Children?.Metadata[selectedSeason]?.ratingKey as string
-      ).then((res) => {
+
+    const season = data?.Children?.Metadata?.find(
+      (child) => child.index === selectedSeason
+    );
+
+    if (data?.type === "show" && season?.ratingKey) {
+      getLibraryMetaChildren(season?.ratingKey as string).then((res) => {
         setEpisodes(res);
       });
     }
@@ -230,6 +252,10 @@ function MetaScreen() {
         <CircularProgress />
       </Backdrop>
     );
+
+  const selectedSeasonData = data?.Children?.Metadata.find(
+    (season) => season.index === selectedSeason
+  );
 
   return (
     <Backdrop
@@ -268,9 +294,11 @@ function MetaScreen() {
             width: "100%",
             maxWidth: "100%",
             aspectRatio: "16/9",
-            backgroundImage: `url(${localStorage.getItem("server")}${
-              data?.art
-            }?X-Plex-Token=${localStorage.getItem("accessToken")})`,
+            backgroundImage: `url(${getTranscodeImageURL(
+              data?.art as string,
+              1920,
+              1080
+            )})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -409,13 +437,7 @@ function MetaScreen() {
             }}
           >
             <img
-              src={`${getTranscodeImageURL(
-                `${data?.thumb}?X-Plex-Token=${localStorage.getItem(
-                  "accessToken"
-                )}`,
-                600,
-                900
-              )}`}
+              src={`${getTranscodeImageURL(data?.thumb as string, 600, 900)}`}
               alt={data?.title || ""}
               style={{
                 width: "100%",
@@ -957,7 +979,7 @@ function MetaScreen() {
                 >
                   {data?.type === "show" &&
                     data?.Children?.Metadata?.map((season, index) => (
-                      <MenuItem key={index} value={index}>
+                      <MenuItem key={index} value={season.index}>
                         {season.title}
                       </MenuItem>
                     ))}
@@ -1090,7 +1112,7 @@ function MetaPage1({
                 onConfirm: async () => {
                   await Promise.all(
                     selectedEpisodes.map(async (episode) => {
-                      await setMediaPlayedStatus(true, episode.ratingKey);
+                      setMediaPlayedStatus(true, episode.ratingKey);
                     })
                   );
                   refetchEpisodes();
@@ -1436,7 +1458,7 @@ function MetaPageReviews({ data }: { data: Plex.Metadata | undefined }) {
                       </Typography>
                       <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Rating
-                          value={review.reviewRating / 2}
+                          value={(review.reviewRating ?? review.rating) / 2}
                           precision={0.5}
                           size="small"
                           readOnly
@@ -1647,13 +1669,7 @@ function ActorItem({
           }}
         >
           <Avatar
-            src={`${getTranscodeImageURL(
-              `${role.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
-              200,
-              200
-            )}`}
+            src={`${getTranscodeImageURL(role.thumb, 200, 200)}`}
             sx={{
               width: "25%",
               height: "auto",
@@ -2021,9 +2037,7 @@ function EpisodeItem({
             borderRadius: "8px",
             aspectRatio: "16/9",
             backgroundImage: `url(${getTranscodeImageURL(
-              `${item.thumb}?X-Plex-Token=${localStorage.getItem(
-                "accessToken"
-              )}`,
+              item.thumb,
               380,
               214
             )})`,
