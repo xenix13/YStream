@@ -71,7 +71,7 @@ docker-compose up -d
 ### Environment Variables
 | Name                     | Type       | Required | Description                                                                 |
 |--------------------------|------------|----------|-----------------------------------------------------------------------------|
-| `PLEX_SERVER`            | string     | Yes      | The URL of the Plex server that the backend will proxy to                   |
+| `PLEX_SERVER`            | string     | Yes      | The URL of the Plex server that the backend will proxy to (CAN BE LOCAL)    |
 | `DISABLE_TLS_VERIFY`     | true/false | No       | If set to true, the proxy will not check any https ssl certificates         |
 | `DISABLE_NEVU_SYNC`      | true/false | No       | If set to true, Nevu sync (watch together) will be disabled                 |
 | `DISABLE_REQUEST_LOGGING`| true/false | No       | If set to true, the server will not log any requests                        |
