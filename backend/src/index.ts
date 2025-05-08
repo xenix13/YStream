@@ -45,6 +45,18 @@ instance.publish({
     }
 })
 
+const proxy = httpProxy.createProxyServer({
+    ws: true,
+    autoRewrite: false,
+    cookieDomainRewrite: (new URL(process.env.PLEX_SERVER as string)).hostname,
+    changeOrigin: true,
+    secure: false,
+});
+
+proxy.on('error', (err, req, res) => {
+    console.error('Proxy error:', err);
+});
+
 app.use(express.json());
 
 const noVerifyHttpsAgent = new https.Agent({
@@ -253,7 +265,15 @@ app.post('/user/options', async (req, res) => {
     res.send(option);
 });
 
-app.use(express.static('www'));
+app.use('/dynproxy/*', (req, res) => {
+    const url = req.originalUrl.split('/dynproxy')[1];
+    if (!url) return res.status(400).send('Bad request');
+
+    proxy.web(req, res, { target: `${process.env.PLEX_SERVER}${url}` }, (err) => {
+        console.error('Proxy error:', err);
+        res.status(500).send('Proxy error');
+    });
+});
 
 app.post('/proxy', (req, res) => {
     const { url, method, headers, data } = req.body;
@@ -344,6 +364,9 @@ app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Headers', '*');
     res.send();
 });
+
+app.use(express.static('www'));
+
 const server = app.listen(3000, () => {
     console.log('Server started on http://localhost:3000');
 });
@@ -354,21 +377,6 @@ let io = (process.env.DISABLE_NEVU_SYNC === 'true') ? null : new SocketIOServer(
     },
 });
 
-const proxy = httpProxy.createProxyServer({
-    ws: true,
-    agent: process.env.DISABLE_TLS_VERIFY === "true" ? noVerifyHttpsAgent : undefined,
-});
-
-// add middleware to only listen on /dynproxy
-app.use('/dynproxy/*', (req, res) => {
-    const url = req.originalUrl.split('/dynproxy')[1];
-    if (!url) return res.status(400).send('Bad request');
-
-    proxy.web(req, res, { target: `${process.env.PLEX_SERVER}${url}` }, (err) => {
-        console.error('Proxy error:', err);
-        res.status(500).send('Proxy error');
-    });
-});
 
 app.use((req, res, next) => {
     if (req.url.startsWith('/socket.io')) return next();

@@ -40,6 +40,8 @@ export namespace PlexTv {
                 "X-Plex-Token": localStorage.getItem("accAccessToken") as string,
                 "includeAdvanced": 1,
                 "includeMeta": 1,
+                "X-Plex-Container-Start": 0,
+                "X-Plex-Container-Size": 300,
             })}`)
             return res.data.MediaContainer.Metadata;
         } catch (error) {
