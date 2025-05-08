@@ -45,6 +45,18 @@ instance.publish({
     }
 })
 
+const proxy = httpProxy.createProxyServer({
+    ws: true,
+    autoRewrite: false,
+    cookieDomainRewrite: (new URL(process.env.PLEX_SERVER as string)).hostname,
+    changeOrigin: true,
+    secure: false,
+});
+
+proxy.on('error', (err, req, res) => {
+    console.error('Proxy error:', err);
+});
+
 app.use(express.json());
 
 const noVerifyHttpsAgent = new https.Agent({
@@ -253,7 +265,7 @@ app.post('/user/options', async (req, res) => {
     res.send(option);
 });
 
-app.all('/dynproxy/*', (req, res) => {
+app.use('/dynproxy/*', (req, res) => {
     const url = req.originalUrl.split('/dynproxy')[1];
     if (!url) return res.status(400).send('Bad request');
 
@@ -363,14 +375,6 @@ let io = (process.env.DISABLE_NEVU_SYNC === 'true') ? null : new SocketIOServer(
     cors: {
         origin: '*',
     },
-});
-
-const proxy = httpProxy.createProxyServer({
-    ws: true,
-    autoRewrite: true,
-    cookieDomainRewrite: (new URL(process.env.PLEX_SERVER as string)).hostname,
-    changeOrigin: true,
-    secure: false,
 });
 
 
